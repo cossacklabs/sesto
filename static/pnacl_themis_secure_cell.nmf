@@ -1,0 +1,9 @@
+{
+  "program": {
+    "portable": {
+      "pnacl-translate": {
+        "url": "pnacl_themis_secure_cell.pexe"
+      }
+    }
+  }
+}

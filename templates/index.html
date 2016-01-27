@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Themis Web keys store</title>
+  <style type="text/css">
+    table {
+     border-collapse: collapse; /* Отображать двойные линии как одинарные */
+    }
+    th {
+     background: #ccc; /* Цвет фона */
+     text-align: left; /* Выравнивание по левому краю */
+    }
+    td, th {
+     border: 1px solid #800; /* Параметры границы */
+     padding: 4px; /* Поля в ячейках */
+    } 
+  </style>
+
+<script type="text/javascript">
+  themis_secure_cell = null; // Global application object.
+  encrypt_flag=0; //1-begin one pass encryption; 2-begin whole file encryption
+  encrypting_row_id="";
+  
+  decrypt_flag=0; //1-begin one pass decryption; 2-begin whole file decryption
+  decrypting_row_id="";
+  
+  key_table_rows=0;
+
+
+  function moduleDidLoad() {
+     themis_secure_cell = document.getElementById('themis_secure_cell');
+     log('<b>info:</b>PNACL themis module loaded');
+  }
+
+function post_data(data){
+    var username = document.getElementById('username').value;
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "POST", "{{ url }}/data/"+username+".dat", false ); // false for synchronous request
+    xmlHttp.send( data );
+    return xmlHttp.responseText;
+}
+
+function parse_keys_table(data){
+  obj = JSON.parse(data);
+  var table = document.getElementById("keys_table");
+  while(table.rows.length > 1) {
+     table.deleteRow(1);
+  }
+  for (var i in obj.nodes){
+      var row = table.insertRow(-1);
+    row.id="keys_table_row_id_"+(key_table_rows++);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+    var cell4 = row.insertCell(3);
+    cell1.innerHTML = obj.nodes[i].url;
+    cell2.innerHTML = obj.nodes[i].username;
+    cell3.innerHTML = "<button onclick=\"pass_dec(\'"+row.id+"\',\'"+obj.nodes[i].password+"\')\" value=\""+obj.nodes[i].password+"\"> show </button>";
+    cell4.innerHTML = "<button onclick=key_table_rem_row('"+(row.id)+"')>-</button>";
+  }
+}  
+
+function pass_dec(row_id, encrypted_pass){
+  var row = document.getElementById(row_id);
+  decrypt_flag=1;
+  decrypting_row_id=row_id;
+  themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,encrypted_pass]);
+}
+  
+function handleMessage(message_event) {
+    msg=message_event.data;
+    command=msg[0];
+    args=msg.slice(1);
+    if (command == "encrypted") {
+      log("encrypted-"+args);
+      if(encrypt_flag==2){
+          post_data(args);
+          encrypt_flag=0;
+      }
+      else if (encrypt_flag==1){
+          document.getElementById(encrypting_row_id).cells[2].innerHTML="<button onclick=\"pass_dec(\'"+encrypting_row_id+"\',\'"+args+"\')\" value=\""+args+"\"> show </button>";
+          encrypt_flag=0;
+      }
+      else
+          log("error");
+    } else if(command == "decrypted") {
+       log("decrypted-"+args);
+       if(decrypt_flag==2){
+           parse_keys_table(args);
+           decrypt_flag=0;
+       }
+       else if (decrypt_flag==1){
+          document.getElementById(decrypting_row_id).cells[2].innerHTML="<input onfocusout=\"password_out(\'"+decrypting_row_id+"\')\" value=\""+args+"\"/>";
+          document.getElementById(decrypting_row_id).cells[2].getElementsByTagName("input")[0].focus();
+          decrypt_flag=0;
+       }
+       else
+          log("error");
+    } else {
+        log(msg);
+    }
+}
+
+  function log(message) {
+     var logField = document.getElementById('info_field');
+     if (logField) {
+         logField.innerHTML = logField.innerHTML+Date.now()+" - "+message+"<br>";
+     }
+  }
+
+  function key_table_save(){
+     var table = document.getElementById("keys_table");
+     var ss='{"nodes":[ ';
+     for (var i = 1, row; row = table.rows[i]; i++) {
+        ss+='{';
+           if(row.cells[0].getElementsByTagName("input")[0]!=undefined){
+              ss+='"url":"'+row.cells[0].getElementsByTagName("input")[0].value+'",';
+              ss+='"username":"'+row.cells[1].getElementsByTagName("input")[0].value+'",';
+              ss+='"password":"'+row.cells[2].getElementsByTagName("button")[0].value+'"},';
+           } else {
+              ss+='"url":"'+row.cells[0].innerHTML+'",';
+              ss+='"username":"'+row.cells[1].innerHTML+'",';
+              ss+='"password":"'+row.cells[2].getElementsByTagName("button")[0].value+'"},';
+           }
+     }
+     ss = ss.slice(0, -1);
+     ss+="]}";
+     log(ss);
+     encrypt_flag=2;
+     themis_secure_cell.postMessage(["encrypt", document.getElementById("userpass").value,ss]);
+  }
+
+function key_table_rem_row(id){
+   return (elem=document.getElementById(id)).parentNode.removeChild(elem);
+}
+
+  function password_out(row_id){
+     var row = document.getElementById(row_id);
+     encrypt_flag=1;
+     encrypting_row_id=row_id;
+     themis_secure_cell.postMessage(["encrypt", document.getElementById("userpass").value,row.cells[2].getElementsByTagName("input")[0].value]);
+  }
+  
+function key_table_add_row(){
+    var table = document.getElementById("keys_table");
+
+    var row = table.insertRow(-1);
+    row.id="keys_table_row_id_"+(key_table_rows++);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+    var cell4 = row.insertCell(3);
+    cell1.innerHTML = "<input/>";
+    cell2.innerHTML = "<input/>";
+    cell3.innerHTML = '<input onfocusout="password_out(\''+row.id+'\')"/>';
+    cell4.innerHTML = "<button onclick=key_table_rem_row('"+(row.id)+"')>-</button>";
+}
+
+function get_data(){
+    var username = document.getElementById('username').value;
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", "{{ url }}/data/"+username+".dat", true ); // false for synchronous request
+//    xmlHttp.responseType = "arraybuffer";
+    xmlHttp.onload = function (oEvent) {
+        var response = xmlHttp.responseText; // Note: not oReq.responseText
+        if (response) {
+           log("get: " + response);
+           decrypt_flag=2;
+           themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,response]);
+       }
+    };
+    xmlHttp.send( null );
+//       themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,xmlHttp.response]);
+//    return xmlHttp.responseText;
+}
+</script>
+</head>
+<body>
+    <h3>web key storage</h3>
+    <p>
+    <div id="listener">
+	<script type="text/javascript">
+	    var listener = document.getElementById('listener');
+	    listener.addEventListener('load', moduleDidLoad, true);
+	    listener.addEventListener('message', handleMessage, true);
+	</script>
+	<embed name="nacl_module"
+	       id="themis_secure_cell"
+	       mode="seal"
+	       width=0 height=0
+	       src="{{ static_resolver(filename='pnacl_themis_secure_cell.nmf') }}"
+	       type="application/x-pnacl" />
+    </div>
+    </p>
+    <b>name</b><input id="username"/><br>
+    <b>pass</b><input type=password id="userpass"/><br>
+    <button onclick="get_data()"> Get</button>
+    <div id="encrypted_text_field" hidden=true></div><br>
+    <div id="keys_table_field">
+      <table id='keys_table' border='1' width='100%'>
+	<tr>
+	  <th>url</th>
+	  <th>username</th>
+	  <th>password</th>
+	  <th></th>
+	</tr>
+      </table><button onclick='key_table_add_row()'> Add row</button><br><button onclick='key_table_save()'> Save</button>
+    </div><br>
+    <b>log:</b> <div id="info_field"></div><br>
+    
+</body>
