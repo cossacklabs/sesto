@@ -2,7 +2,7 @@
   "program": {
     "portable": {
       "pnacl-translate": {
-        "url": "pnacl_themis_secure_cell.pexe"
+        "url": "sesto_pnacl_module.pexe"
       }
     }
   }

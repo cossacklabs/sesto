@@ -1,212 +1,1584 @@
 <!DOCTYPE html>
-<html>
+<html><head><meta charset="UTF-8"/>
 
-<head>
-<title>Themis Web keys store</title>
-  <style type="text/css">
-    table {
-     border-collapse: collapse; /* Отображать двойные линии как одинарные */
-    }
-    th {
-     background: #ccc; /* Цвет фона */
-     text-align: left; /* Выравнивание по левому краю */
-    }
-    td, th {
-     border: 1px solid #800; /* Параметры границы */
-     padding: 4px; /* Поля в ячейках */
-    } 
-  </style>
+	<title>REDNOTE - The very secure notes</title>
 
-<script type="text/javascript">
-  themis_secure_cell = null; // Global application object.
-  encrypt_flag=0; //1-begin one pass encryption; 2-begin whole file encryption
-  encrypting_row_id="";
-  
-  decrypt_flag=0; //1-begin one pass decryption; 2-begin whole file decryption
-  decrypting_row_id="";
-  
-  key_table_rows=0;
+	<meta name="keywords" content="secure notes"/>
+	<meta name="description" content="Very secure notes"/>
+	<meta name="author" content="__,,,^._.^,,,__"/>
+
+	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<style>
+
+	*				{
+					 margin:0;
+					 padding:0;
+					 border:none;
+					 outline:none;
+					 background:transparent;
+					 box-sizing:border-box;
+					}
+
+	html,
+	body				{width:100%; height:100%; position:absolute; overflow:hidden; background:#b30000; /*400*/;}
+
+	body,
+	input,
+	button,
+	textarea			{font-size:16px; font-family:Arial, helvetica; fline-height:1.1em; }
 
 
-  function moduleDidLoad() {
-     themis_secure_cell = document.getElementById('themis_secure_cell');
-     log('<b>info:</b>PNACL themis module loaded');
-  }
+	body				{z-index:-1}
+	button				{cursor:pointer;}
 
-function post_data(data){
-    var username = document.getElementById('username').value;
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open( "POST", "{{ url }}/data/"+username+".dat", false ); // false for synchronous request
-    xmlHttp.send( data );
-    return xmlHttp.responseText;
+
+
+
+
+
+
+
+	.btn-back				{display:block; width:3em; height:3em; background:#fff; position:absolute; z-index:1; top:2em; right:0;}
+	.btn-back				{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M37,48c-0.512,0-1.023-0.195-1.414-0.586L20.171,32l15.415-15.414c0.781-0.781,2.047-0.781,2.828,0c0.781,0.781,0.781,2.047,0,2.828L25.829,32l12.585,12.586c0.781,0.781,0.781,2.047,0,2.828C38.023,47.805,37.512,48,37,48z"/></svg>') no-repeat;}
+	.btn-back				{transition:opacity ease-out 0.3s;}
+
+
+	.btn-back				{opacity:0;}
+	.btn-back				{visibility:hidden;}
+	.btn-back:hover				{opacity:0.9 !important;}
+
+._a1	.btn-back				{visibility:visible; opacity:0.75;}
+
+@media (min-width:56em) {
+	.btn-back				{right:-0.5em;}
+
+._a1	.btn-back				{visibility:hidden;}
+._a2	.btn-back				{visibility:visible; opacity:0.75;}
+}
+@media (min-width:76em) {
+._a2	.btn-back				{visibility:hidden;}
+._a3	.btn-back				{visibility:visible; opacity:0.75;}
+}
+@media (min-width:96em) {
+._a3	.btn-back				{visibility:hidden;}
+._a4	.btn-back				{visibility:visible; opacity:0.75;}
+}
+@media (min-width:116em) {
+._a4	.btn-back				{visibility:hidden;}
+._a5	.btn-back				{visibility:visible; opacity:0.75;}
 }
 
-function parse_keys_table(data){
-  obj = JSON.parse(data);
-  var table = document.getElementById("keys_table");
-  while(table.rows.length > 1) {
-     table.deleteRow(1);
-  }
-  for (var i in obj.nodes){
-      var row = table.insertRow(-1);
-    row.id="keys_table_row_id_"+(key_table_rows++);
-    var cell1 = row.insertCell(0);
-    var cell2 = row.insertCell(1);
-    var cell3 = row.insertCell(2);
-    var cell4 = row.insertCell(3);
-    cell1.innerHTML = obj.nodes[i].url;
-    cell2.innerHTML = obj.nodes[i].username;
-    cell3.innerHTML = "<button onclick=\"pass_dec(\'"+row.id+"\',\'"+obj.nodes[i].password+"\')\" value=\""+obj.nodes[i].password+"\"> show </button>";
-    cell4.innerHTML = "<button onclick=key_table_rem_row('"+(row.id)+"')>-</button>";
-  }
-}  
 
-function pass_dec(row_id, encrypted_pass){
-  var row = document.getElementById(row_id);
-  decrypt_flag=1;
-  decrypting_row_id=row_id;
-  themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,encrypted_pass]);
+
+</style>
+
+
+
+
+
+
+
+</head><body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+
+
+
+	.root		{position:absolute; top:0; height:100%; background:#500; z-index:2;}
+	.fld		{position:absolute; top:0; height:100%;}
+	.inf		{position:absolute; top:0; height:100%;background:#ddd !important;}
+
+	.root,
+	.fld,
+	.inf		{ftext-align:right;
+				transition:
+					left ease-out 0.4s,
+					right ease-out 0.4s,
+					width ease-out 0.4s,
+					margin ease-out 0.4s,
+					padding ease-out 0.4s,
+					background ease-out 0.4s;
+			}	
+
+
+/* do for onclick */
+/*
+	.root,
+	.fld,
+	.inf			{overflow:hidden;}
+
+	
+	.root:hover,
+	.fld:hover,
+	.inf:hover		{overflow-y:auto;} 
+*/
+
+
+
+	._na		{background:#500 !important;}
+	._na		{margin-left:10em; z-index:-550 !important;}
+	._na form	{opacity:0; transition:opacity ease-out 0.4s}
+
+
+	.root		{left:0; width:16em;}
+	.fld		{left:0;}
+	.inf		{left:0;}
+
+	._a0		{background:#b30000; right:0}
+	._a0._back	{fright:auto !important;}
+	._back		{}
+
+	._a0		{transition:none;}
+
+	._a0._na,
+	._a0._back	{right:0;
+				width:100%;
+				transition:
+					left ease-out 0.4s,
+					right ease-out 0.4s,
+					width ease-out 0.4s,
+					margin ease-out 0.4s,
+					padding ease-out 0.4s,
+
+					background ease-out 0.4s;
+			}
+
+	._a12,
+	._a11,
+	._a10,
+	._a9,
+	._a8,
+	._a7,
+	._a6,
+	._a5,
+	._a4,
+	._a3,
+	._a2,
+	._a1,
+	._new		{width:16em; background:#600;}
+	._a0f		{fwidth:100%; f }
+
+
+
+
+
+/**/
+
+	.root		{width:100%; left:0;}
+.a1	.root		{width:16em; left:-12em}	
+.a2	.root,
+.a3	.root,
+.a4	.root,
+.a5	.root,
+.a6	.root		{width:16em; left:-16em}
+
+
+	.fld		{width:16em; left:-16em;}
+
+	._a0		{width:auto; left:0;}
+	._a0		{padding:0 0 0 1em;}
+
+	form		{height:100%; overflow-y:hidden;}
+	._a0.loaded form{overflow-y:auto; height:100%;}
+
+	._a1		{padding:0; left:-12em;}
+
+
+.a1 	.root ul	{width:18em; margin:0 0 0 -6em;} /* MOD */
+
+	._a1 form	{margin:0 0 0 -6em;}
+
+
+
+
+
+@media (min-width:40em) {
+
+.a1 	.root ul	{width:auto; margin:0;} /* MOD */
+
+	.root		{left:0 !important; width:16em;}
+	.fld		{left:0; width:16em;}
+	.inf		{left:0; width:16em;}
+	._a0		{left:0; width:100%;}
+
+	._a1 form	{margin:0 0 0 -6em;}
+
+	.a1 ._a0	{padding:0 0 0 16em;}
+
+	.a2 ._a1	{left:3em;}
+	.a2 ._a0	{padding:0 0 0 19em;}
+
+			.a3 ._a1	{left:3em;}
+			.a3 ._a0	{padding:0 0 0 19em;}
+
+			.a4 ._a1	{left:3em;}
+			.a4 ._a0	{padding:0 0 0 19em;}
+
+			.a5 ._a1	{left:3em;}
+			.a5 ._a0	{padding:0 0 0 19em;}
+
+			.a6 ._a1	{left:3em;}
+			.a6 ._a0	{padding:0 0 0 19em;}
 }
-  
-function handleMessage(message_event) {
-    msg=message_event.data;
-    command=msg[0];
-    args=msg.slice(1);
-    if (command == "encrypted") {
-      log("encrypted-"+args);
-      if(encrypt_flag==2){
-          post_data(args);
-          encrypt_flag=0;
-      }
-      else if (encrypt_flag==1){
-          document.getElementById(encrypting_row_id).cells[2].innerHTML="<button onclick=\"pass_dec(\'"+encrypting_row_id+"\',\'"+args+"\')\" value=\""+args+"\"> show </button>";
-          encrypt_flag=0;
-      }
-      else
-          log("error");
-    } else if(command == "decrypted") {
-       log("decrypted-"+args);
-       if(decrypt_flag==2){
-           parse_keys_table(args);
-           decrypt_flag=0;
-       }
-       else if (decrypt_flag==1){
-          document.getElementById(decrypting_row_id).cells[2].innerHTML="<input onfocusout=\"password_out(\'"+decrypting_row_id+"\')\" value=\""+args+"\"/>";
-          document.getElementById(decrypting_row_id).cells[2].getElementsByTagName("input")[0].focus();
-          decrypt_flag=0;
-       }
-       else
-          log("error");
-    } else {
-        log(msg);
-    }
+
+
+@media (min-width:56em) {
+
+	._a1 form	{margin:0}
+	._a2 form	{margin:0 0 0 -6em;}
+
+	.a2 ._a1	{left:16em;}
+	.a2 ._a0	{padding:0 0 0 32em;}
+
+	.a3 ._a2	{left:3em;}
+	.a3 ._a1	{left:19em;}
+	.a3 ._a0	{padding:0 0 0 35em;}
+
+			.a4 ._a2	{left:3em;}
+			.a4 ._a1	{left:19em;}
+			.a4 ._a0	{padding:0 0 0 35em;}
+
+			.a5 ._a2	{left:3em;}
+			.a5 ._a1	{left:19em;}
+			.a5 ._a0	{padding:0 0 0 35em;}
+
+			.a6 ._a2	{left:3em;}
+			.a6 ._a1	{left:19em;}
+			.a6 ._a0	{padding:0 0 0 35em;}
 }
 
-  function log(message) {
-     var logField = document.getElementById('info_field');
-     if (logField) {
-         logField.innerHTML = logField.innerHTML+Date.now()+" - "+message+"<br>";
-     }
-  }
 
-  function key_table_save(){
-     var table = document.getElementById("keys_table");
-     var ss='{"nodes":[ ';
-     for (var i = 1, row; row = table.rows[i]; i++) {
-        ss+='{';
-           if(row.cells[0].getElementsByTagName("input")[0]!=undefined){
-              ss+='"url":"'+row.cells[0].getElementsByTagName("input")[0].value+'",';
-              ss+='"username":"'+row.cells[1].getElementsByTagName("input")[0].value+'",';
-              ss+='"password":"'+row.cells[2].getElementsByTagName("button")[0].value+'"},';
-           } else {
-              ss+='"url":"'+row.cells[0].innerHTML+'",';
-              ss+='"username":"'+row.cells[1].innerHTML+'",';
-              ss+='"password":"'+row.cells[2].getElementsByTagName("button")[0].value+'"},';
-           }
-     }
-     ss = ss.slice(0, -1);
-     ss+="]}";
-     log(ss);
-     encrypt_flag=2;
-     themis_secure_cell.postMessage(["encrypt", document.getElementById("userpass").value,ss]);
-  }
+@media (min-width:76em) {
 
-function key_table_rem_row(id){
-   return (elem=document.getElementById(id)).parentNode.removeChild(elem);
+	._a2 form	{margin:0}
+	._a3 form	{margin:0 0 0 -6em;}
+
+	.a3 ._a2	{left:16em;}
+	.a3 ._a1	{left:32em;}
+	.a3 ._a0	{padding:0 0 0 48em;}
+
+	.a4 ._a3	{left:3em;}
+	.a4 ._a2	{left:19em;}
+	.a4 ._a1	{left:35em;}
+	.a4 ._a0	{padding:0 0 0 51em;}
+
+			.a5 ._a3	{left:3em;}
+			.a5 ._a2	{left:19em;}
+			.a5 ._a1	{left:35em;}
+			.a5 ._a0	{padding:0 0 0 51em;}
+
+			.a6 ._a3	{left:3em;}
+			.a6 ._a2	{left:19em;}
+			.a6 ._a1	{left:35em;}
+			.a6 ._a0	{padding:0 0 0 51em;}
 }
 
-  function password_out(row_id){
-     var row = document.getElementById(row_id);
-     encrypt_flag=1;
-     encrypting_row_id=row_id;
-     themis_secure_cell.postMessage(["encrypt", document.getElementById("userpass").value,row.cells[2].getElementsByTagName("input")[0].value]);
-  }
-  
-function key_table_add_row(){
-    var table = document.getElementById("keys_table");
+@media (min-width:96em) {
 
-    var row = table.insertRow(-1);
-    row.id="keys_table_row_id_"+(key_table_rows++);
-    var cell1 = row.insertCell(0);
-    var cell2 = row.insertCell(1);
-    var cell3 = row.insertCell(2);
-    var cell4 = row.insertCell(3);
-    cell1.innerHTML = "<input/>";
-    cell2.innerHTML = "<input/>";
-    cell3.innerHTML = '<input onfocusout="password_out(\''+row.id+'\')"/>';
-    cell4.innerHTML = "<button onclick=key_table_rem_row('"+(row.id)+"')>-</button>";
+	._a3 form	{margin:0}
+	._a4 form	{margin:0 0 0 -6em;}
+
+	.a4 ._a3	{left:16em;}
+	.a4 ._a2	{left:32em;}
+	.a4 ._a1	{left:48em;}
+	.a4 ._a0	{padding:0 0 0 64em;}
+
+	.a5 ._a4	{left:3em;}	
+	.a5 ._a3	{left:19em;}
+	.a5 ._a2	{left:35em;}
+	.a5 ._a1	{left:51em;}
+	.a5 ._a0	{padding:0 0 0 67em;}
+
+			.a6 ._a4	{left:3em;}
+			.a6 ._a3	{left:19em;}
+			.a6 ._a2	{left:35em;}
+			.a6 ._a1	{left:51em;}
+			.a6 ._a0	{padding:0 0 0 67em;}
 }
 
-function get_data(){
-    var username = document.getElementById('username').value;
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open( "GET", "{{ url }}/data/"+username+".dat", true ); // false for synchronous request
-//    xmlHttp.responseType = "arraybuffer";
-    xmlHttp.onload = function (oEvent) {
-        var response = xmlHttp.responseText; // Note: not oReq.responseText
-        if (response) {
-           log("get: " + response);
-           decrypt_flag=2;
-           themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,response]);
-       }
-    };
-    xmlHttp.send( null );
-//       themis_secure_cell.postMessage(["decrypt", document.getElementById("userpass").value,xmlHttp.response]);
-//    return xmlHttp.responseText;
+@media (min-width:116em) {
+
+	._a4 form	{margin:0}
+	._a5 form	{margin:0 0 0 -6em;}
+
+	.a5 ._a4	{left:16em;}
+	.a5 ._a3	{left:32em;}
+	.a5 ._a2	{left:48em;}
+	.a5 ._a1	{left:64em;}
+	.a5 ._a0	{padding:0 0 0 80em;}
+
+	.a6 ._a5	{left:3em;}
+	.a6 ._a4	{left:19em;}
+	.a6 ._a3	{left:35em;}
+	.a6 ._a2	{left:51em;}
+	.a6 ._a1	{left:67em;}
+	.a6 ._a0	{padding:0 0 0 83em;}
 }
+
+
+
+
+
+
+	a			{color:#ccc;}
+._a0	a			{color:#fff;}
+
+
+
+
+	form			{width:16em;}
+	form			{transition:
+					margin ease-out 0.3s,
+					width ease-out 0.3s,
+					max-width ease-out 0.3s;}
+._a0	form			{width:auto; padding:0 2em 0 0; margin:0 !important;}
+
+
+
+
+
+
+	ul,
+	li			{list-style-type:none;}
+
+	ul			{padding:0 1em 0 2em; margin-bottom:10em !important;}
+
+	ul a			{border-top:1px rgba(255,255,255,0.2) solid;
+				 line-height:1em; padding:0.8em 0; display:block;
+				 font-size:0.85em; text-decoration:none;
+				 overflow:hidden; white-space:nowrap;}
+
+	ul a b			{font-weight:normal;}
+	ul small		{display:block; padding:0.25em 0 0 0; opacity:0.85;}
+	ul br			{display:none;}
+
+	ul li:first-child a	{border:none;}
+	
+
+	ul .sel			{background:rgba(255,255,255,0.75); padding:0.8em; margin:0 -0.8em; color:#900;}
+
+
+.root	ul			{margin-top:4em !important;}
+.root	ul			{text-transform:uppercase;}
+.root	a			{padding:1em 0;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	form p			{padding:0.75em; margin:2px 0 0 3em; background:#b00; position:relative;}
+	form button		{display:none;}
+
+	form input,
+	form textarea		{display:block;
+				 border:2px transparent solid; color:#900;
+				 font-size:11px; width:100%; background:transparent; line-height:1em; padding:2px 8px 0 8px;
+				}
+
+
+
+	form .val		{font-size:14px; padding:9px 8px 8px 8px; font-weight:bold;}
+	form textarea.val	{height:auto; min-height:5em; resize:vertical;}
+
+	form .key		{ color:#ddd; margin-bottom:-2px;}
+	form .val		{ color:#eee;}
+
+
+	form .title		{background:none; padding:0 0 2em 0; margin:3em 0 2em 1em; border-bottom:2px rgba(255,255,255, 0.2) solid;}
+
+	form .title .key	{visibility:hidden;}
+	form .title .val	{font-size:2em; font-weight:normal; padding:4px 8px 2px 8px;}
+
+
+	form .title		{opacity:0.5;}
+._a0	form .title		{opacity:1;}
+
+._a0	form			{padding-left:15%;}
+._a0	form input,
+._a0	form textarea		{border-color:#b00;}
+._a0	.title input		{border-color:#b30000;}
+
+
+
+
+
+
+
+
+.edit			{}
+.edit .title .key,
+.edit .title .key:focus	{visibility:visible; background:transparent; border-color:transparent; color:#ddd;}
+
+.edit .key		{background:#a00; color:#eee;}
+.edit .key:focus	{background:#900; border-color:#900; color:#fff;}
+
+.edit .val		{background:#ddd; color:#800; border-color:#b00;}
+.edit .val:focus	{background:#eee; border-color:#eee; color:#900;}
+
+
+
+._a0 p button		{display:none; width:3em; height:1.85em; background:#eee; position:absolute; right:0; top:0;}
+._a0 p button.protected	{display:block;}
+
+.edit p button		{display:block;}
+.edit p button.protected{display:block;}
+
+</style>
+
+
+
+
+
+
+
+<style>
+
+
+
+
+
+._a1	p.btn		{display:none;}
+	p.btn		{position:absolute; bottom:0; left:0; right:0; background:#fff;}
+	p.btn		{margin:0 0 0 6em;}
+
+@media (min-width:40em) {
+
+	.a1 p.btn	{margin:0 0 0 16em;}
+	.a2 p.btn,
+	.a3 p.btn,
+	.a4 p.btn,
+	.a5 p.btn,
+	.a6 p.btn	{margin:0 0 0 19em;}
+}
+
+
+@media (min-width:56em) {
+
+	.a2 p.btn	{margin:0 0 0 32em;}
+	.a3 p.btn,
+	.a4 p.btn,
+	.a5 p.btn,
+	.a6 p.btn	{margin:0 0 0 35em;}
+}
+
+@media (min-width:76em) {
+
+	.a3 p.btn	{margin:0 0 0 48em;}
+	.a4 p.btn,
+	.a5 p.btn,
+	.a6 p.btn	{margin:0 0 0 51em;}
+}
+
+@media (min-width:96em) {
+
+	.a4 p.btn	{margin:0 0 0 64em;}
+	.a5 p.btn,
+	.a6 p.btn	{margin:0 0 0 67em;}
+}
+
+@media (min-width:116em) {
+
+	.a5 p.btn	{margin:0 0 0 80em;}
+	.a6 p.btn	{margin:0 0 0 83em;}
+}
+
+
+
+p.btn a			{position:absolute; display:block; width:3em; height:3em;}
+p.btn a			{margin:0 -1.5em; bottom:-3em; padding:0.1em; border-radius:50%;}
+p.btn a			{opacity:0.75;}
+p.btn a:hover		{opacity:0.90 !important;}
+
+.btn-edit		{right:85%;}
+.btn-delete		{right:50%;}
+.btn-folder		{right:30%;}
+.btn-file		{right:15%;}
+.btn-save		{right:15%;}
+
+.btn-new		{right:15%;}
+._a0 .btn-new		{bottom:1.5em;}
+._a0.new .btn-new	{}
+
+.btn-new-file		{right:15%;}
+._a0 .btn-new-file	{bottom:4.5em; opacity:0; visibility:hidden;}
+._a0.new .btn-new-file	{bottom:5em; opacity:0.75; visibility:visible;}
+
+.btn-new-folder		{right:15%;}
+._a0 .btn-new-folder	{bottom:4.5em;  opacity:0; visibility:hidden;}
+._a0.new .btn-new-folder{bottom:8.5em; opacity:0.75; visibility:visible;}
+
+.btn-edit		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#b30000" d="M32,1C14.879,1,1,14.879,1,32c0,17.12,13.879,31,31,31c17.121,0,31-13.88,31-31C63,14.879,49.121,1,32,1z"/><path fill="#fff" d="M32,1C14.879,1,1,14.879,1,32c0,17.12,13.879,31,31,31c17.12,0,31-13.88,31-31C63,14.879,49.12,1,32,1zM32,61.063c-16.05,0-29.063-13.013-29.063-29.063C2.938,15.95,15.95,2.938,32,2.938c16.051,0,29.063,13.012,29.063,29.063C61.063,48.051,48.051,61.063,32,61.063zM46.012,20.307l-6.789-4.033c-0.938-0.557-2.137-0.227-2.679,0.738l-7.29,13.338l-0.98,1.746c-0.319,0.568-0.781,1.278-0.735,2.021L27.012,43H18v2h11v-0.014c0.282-0.006,0.565-0.065,0.826-0.198l7.306-4.976c0.647-0.328,1.009-1.1,1.327-1.666l0.979-1.748l0.49-0.873l6.801-12.464C47.27,22.097,46.949,20.863,46.012,20.307z M38.23,34.52l-0.489,0.873c0,0-0.351,0.623-0.979,1.746c-0.631,1.121-1.967,2.187-2.453,2.432l-3.718,3.011c-0.439,0.226-0.959,0.207-1.382-0.045c-0.425-0.252-0.698-0.705-0.729-1.209l0.674-4.818c-0.034-0.555,0.182-2.27,0.817-3.401c0.636-1.132,1.96-3.493,1.96-3.493l1.959-3.493l1.43-2.661l6.791,4.031l-1.43,2.664L38.23,34.52z M43.041,25.759l-6.791-4.031l1.992-3.708l6.79,4.033L43.041,25.759z"/></svg>') no-repeat;}
+.btn-delete		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#f00" d="M32,1C14.879,1,1,14.879,1,32c0,17.12,13.879,31,31,31c17.121,0,31-13.88,31-31C63,14.879,49.121,1,32,1z"/><path fill="#fff" d="M26,42h12V26H26V42z M33,28h2v12h-2V28z M29,28h2v12h-2V28z M42,26h-2v16c0,1.104-0.896,2-2,2H26c-1.104,0-2-0.896-2-2V26h-2v-2h5v-2c0-1.104,0.896-2,2-2h6c1.104,0,2,0.896,2,2v2h5V26z M35,22h-6v2h6V22z"/></svg>') no-repeat;}
+.btn-save		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M32,1C14.879,1,1,14.879,1,32c0,17.121,13.879,31,31,31c17.12,0,31-13.879,31-31C63,14.879,49.12,1,32,1z"/><path fill="#080" d="M28.222,41.191L28,40.971l-0.222,0.223l-8.971-8.97l1.414-1.415L28,38.586l15.777-15.778l1.414,1.414L28.222,41.191z"/></svg>') no-repeat;}
+.btn-new-file		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M32,1C14.879,1,1,14.879,1,32c0,17.12,13.879,31,31,31c17.121,0,31-13.88,31-31C63,14.879,49.121,1,32,1z"/><path fill="#f00" d="M42.599,26.184l-7.892-7.891C34.536,18.122,34.263,18,34,18H22c-0.552,0-1,0.448-1,1v26c0,0.553,0.448,1,1,1h20c0.553,0,1-0.447,1-1V27.097C43.003,27.063,42.854,26.365,42.599,26.184z M35,21.414L39.586,26H35V21.414z M23,44V20h10v7c0,0.552,0.447,1,1,1h7v16H23z"/></svg>') no-repeat;}
+.btn-new-folder		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M32,1C14.879,1,1,14.879,1,32c0,17.12,13.879,31,31,31c17.121,0,31-13.88,31-31C63,14.879,49.121,1,32,1z"/><path fill="#f00" d="M46,28v-2c0-1.104-0.896-2-2-2H31v-1c0-1.104-0.896-2-2-2h-9c-1.104,0-2,0.896-2,2v5c-1.104,0-2,0.896-2,2l4,11c0,1.104,0.896,2,2,2h20c1.104,0,2-0.896,2-2l4-11C48,28.896,47.104,28,46,28z M20,23h9v3h15v2H20V23z M42,41H22l-4-11h28L42,41z"/></svg>') no-repeat;}
+.btn-new		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M32,1C14.879,1,1,14.879,1,32c0,17.121,13.879,31,31,31c17.12,0,31-13.879,31-31C63,14.879,49.12,1,32,1z"/><path fill="#09e" d="M44,31H33V20h-2v11H20v2h11v11h2V33h11V31z"/></svg>');}
+._a0.new .btn-new	{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#f00" d="M32,1C14.879,1,1,14.879,1,32c0,17.121,13.879,31,31,31c17.12,0,31-13.879,31-31C63,14.879,49.12,1,32,1z"/><path fill="#fff" d="M43,31v2H21v-2H43z"/></svg>');}
+
+._a0 .btn-rem		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M41.192,24.222L33.414,32l7.778,7.778l-1.414,1.414L32,33.414l-7.778,7.778l-1.414-1.414L30.586,32l-7.778-7.778l1.414-1.414L32,30.586l7.778-7.778L41.192,24.222z"/></svg>') #f00 no-repeat;}
+._a0 .btn-swp		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M44,24H20l12-12L44,24zM32,52l12-12H20L32,52z"/></svg>') #b00 no-repeat;}
+._a0 .txt .btn-swp	{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M20,16h24L32,28L20,16zM32,36L20,48h24L32,36z"/></svg>') #b00 no-repeat;}
+
+._a0 .btn-sec		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#faa" d="M15.073,50.64V31.353c0-0.463,0.164-0.851,0.491-1.161c0.328-0.312,0.731-0.468,1.21-0.468h22.042v-7.308c0-2.076-0.687-3.841-2.061-5.294c-1.357-1.39-2.946-2.084-4.768-2.084s-3.41,0.695-4.768,2.084c-1.357,1.438-2.036,3.203-2.036,5.294v1.869h-6.206v-1.869c0-1.788,0.332-3.497,0.995-5.127c0.662-1.629,1.585-3.066,2.767-4.312c1.166-1.246,2.552-2.22,4.157-2.923C28.502,9.351,30.199,9,31.988,9s3.49,0.351,5.104,1.054c1.613,0.703,3.002,1.677,4.168,2.923c1.183,1.246,2.101,2.683,2.756,4.312c0.655,1.63,0.982,3.339,0.982,5.127v7.308h2.228c0.479,0,0.883,0.156,1.21,0.468c0.328,0.311,0.491,0.698,0.491,1.161V50.64c0,0.415-0.132,0.727-0.395,0.935c-0.264,0.207-0.699,0.438-1.307,0.694c-0.319,0.144-0.886,0.344-1.7,0.599c-0.815,0.256-1.897,0.556-3.247,0.898c-1.35,0.344-2.951,0.635-4.804,0.875C35.622,54.88,33.793,55,31.988,55c-5.063,0-10.135-0.911-15.214-2.731c-0.543-0.176-0.962-0.388-1.258-0.635C15.222,51.386,15.073,51.055,15.073,50.64L15.073,50.64z M24.25,42.266c0,0.392,0.136,0.723,0.407,0.994l4.192,4.098c0.271,0.271,0.607,0.407,1.007,0.407c0.431,0,0.767-0.136,1.006-0.407l8.601-8.41c0.288-0.287,0.432-0.627,0.432-1.018c0-0.392-0.144-0.731-0.432-1.019c-0.271-0.271-0.606-0.407-1.006-0.407s-0.734,0.136-1.006,0.407l-7.595,7.427l-3.139-3.066c-0.288-0.287-0.631-0.431-1.03-0.431s-0.743,0.144-1.03,0.431C24.386,41.543,24.25,41.875,24.25,42.266L24.25,42.266z"/></svg>') #b00 no-repeat 50% 0;}
+._a0 .sec .btn-sec	{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fe1" d="M15.073,50.64V31.354c0-0.466,0.166-0.852,0.492-1.161c0.328-0.313,0.731-0.471,1.209-0.471h2.204v-7.305c0-1.789,0.332-3.497,0.997-5.127c0.661-1.629,1.583-3.067,2.767-4.314c1.166-1.245,2.55-2.221,4.157-2.923C28.501,9.352,30.2,9,31.987,9c1.791,0,3.492,0.352,5.105,1.054c1.614,0.702,3.002,1.678,4.167,2.923c1.183,1.247,2.103,2.685,2.753,4.314c0.658,1.63,0.984,3.338,0.984,5.127v7.305h2.23c0.48,0,0.883,0.158,1.209,0.471c0.326,0.31,0.492,0.695,0.492,1.161V50.64c0,0.413-0.133,0.726-0.396,0.935c-0.264,0.205-0.701,0.441-1.305,0.692c-0.318,0.144-0.889,0.347-1.703,0.604c-0.813,0.251-1.895,0.553-3.244,0.898c-1.35,0.339-2.953,0.634-4.804,0.872C35.621,54.879,33.794,55,31.987,55c-5.062,0-10.133-0.91-15.213-2.733c-0.542-0.175-0.962-0.383-1.258-0.634C15.221,51.389,15.073,51.053,15.073,50.64L15.073,50.64z M25.186,29.723h13.629v-7.305c0-2.08-0.686-3.844-2.058-5.295c-1.359-1.39-2.946-2.084-4.77-2.084c-1.82,0-3.408,0.695-4.768,2.084c-1.355,1.438-2.034,3.2-2.034,5.295V29.723L25.186,29.723z M26.573,46.137c0,0.367,0.135,0.686,0.409,0.957c0.286,0.285,0.607,0.433,0.956,0.433c0.384,0,0.706-0.147,0.96-0.433l3.089-3.066l3.091,3.066c0.255,0.285,0.576,0.433,0.96,0.433c0.349,0,0.671-0.147,0.956-0.433c0.273-0.271,0.41-0.593,0.41-0.973c0-0.374-0.137-0.688-0.41-0.946l-3.089-3.086l3.089-3.071c0.273-0.271,0.41-0.593,0.41-0.968c0-0.377-0.137-0.7-0.41-0.972c-0.271-0.271-0.59-0.406-0.956-0.406c-0.369,0-0.688,0.135-0.96,0.406l-3.091,3.092l-3.089-3.092c-0.271-0.271-0.59-0.406-0.96-0.406c-0.366,0-0.685,0.135-0.956,0.406c-0.274,0.271-0.409,0.595-0.409,0.972c0,0.375,0.135,0.696,0.409,0.968l3.089,3.071l-3.089,3.086C26.708,45.446,26.573,45.766,26.573,46.137L26.573,46.137z"/></svg>') #b00 no-repeat 50% 0;}
+
+._a0 .btn-upr		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fe1" d="M22.274,25.984c0-4.13,1.465-7.66,4.395-10.59S33.129,11,37.259,11c4.131,0,7.66,1.465,10.59,4.395s4.395,6.46,4.395,10.59c0,4.131-1.465,7.673-4.395,10.626c-2.93,2.954-6.459,4.431-10.59,4.431h-7.492v5.979h-5.979V53h-6.051c-1.633,0-3.038-0.433-4.215-1.297s-1.765-1.921-1.765-3.17v-4.538L23.644,32.18C22.73,30.211,22.274,28.146,22.274,25.984z M37.259,32.036c1.634,0,3.05-0.601,4.251-1.801c1.2-1.201,1.801-2.618,1.801-4.251s-0.588-3.037-1.765-4.214s-2.605-1.766-4.287-1.766c-1.633,0-3.037,0.589-4.214,1.766s-1.765,2.581-1.765,4.214c0,1.682,0.588,3.11,1.765,4.287C34.222,31.447,35.626,32.036,37.259,32.036z"/></svg>') #b00 no-repeat 50% 0;}
+._a0 .btn-add		{background:url('data:image/svg+xml;utf8,<svg width="32px" height="32px" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#080" d="M44,31H33V20h-2v11H20v2h11v11h2V33h11V31z"/></svg>') #fff no-repeat 50% 100%;}
+
+
+	.sesto		{display:block; height:5.8em; margin:1em 0;}
+	.sesto		{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 356 186"><path fill="#fff" d="M103.833,184.741v-1.807c0.207,0.183,0.454,0.347,0.742,0.493c0.288,0.146,0.592,0.269,0.911,0.369c0.318,0.101,0.639,0.178,0.96,0.232s0.619,0.082,0.892,0.082c0.941,0,1.644-0.175,2.108-0.524s0.697-0.853,0.697-1.51c0-0.353-0.078-0.66-0.232-0.922s-0.369-0.5-0.642-0.716c-0.273-0.216-0.596-0.423-0.969-0.621c-0.374-0.197-0.776-0.406-1.207-0.625c-0.455-0.23-0.88-0.465-1.275-0.702s-0.737-0.499-1.029-0.785c-0.291-0.285-0.521-0.609-0.688-0.972c-0.167-0.361-0.25-0.786-0.25-1.272c0-0.597,0.13-1.115,0.391-1.556c0.261-0.441,0.604-0.805,1.029-1.091s0.909-0.499,1.453-0.639c0.543-0.14,1.097-0.21,1.662-0.21c1.287,0,2.225,0.155,2.813,0.466v1.725c-0.771-0.535-1.761-0.804-2.968-0.804c-0.334,0-0.668,0.035-1.001,0.105c-0.334,0.07-0.631,0.184-0.893,0.342c-0.261,0.158-0.473,0.362-0.637,0.611c-0.164,0.25-0.246,0.554-0.246,0.913c0,0.334,0.063,0.623,0.187,0.866c0.124,0.243,0.308,0.466,0.551,0.666c0.243,0.201,0.539,0.396,0.888,0.584s0.751,0.396,1.207,0.621c0.467,0.23,0.91,0.475,1.329,0.729c0.419,0.256,0.786,0.538,1.102,0.849c0.316,0.311,0.566,0.654,0.751,1.031c0.185,0.377,0.277,0.809,0.277,1.296c0,0.645-0.126,1.19-0.377,1.638c-0.252,0.447-0.592,0.811-1.02,1.09c-0.428,0.28-0.921,0.482-1.479,0.607c-0.559,0.124-1.147,0.187-1.766,0.187c-0.207,0-0.461-0.017-0.765-0.05s-0.613-0.082-0.929-0.146c-0.315-0.063-0.614-0.143-0.897-0.237C104.229,184.962,104.003,184.856,103.833,184.741z M126.863,185.271h-6.919v-13.085h6.628v1.388h-5.099v4.353h4.716v1.377h-4.716v4.581h5.39V185.271z M143.857,184.723c-0.965,0.512-2.167,0.767-3.605,0.767c-1.857,0-3.345-0.599-4.461-1.797c-1.117-1.198-1.675-2.771-1.675-4.718c0-2.093,0.628-3.783,1.885-5.073c1.256-1.289,2.85-1.935,4.78-1.935c1.238,0,2.264,0.18,3.078,0.538v1.634c-0.935-0.523-1.967-0.785-3.096-0.785c-1.5,0-2.715,0.502-3.646,1.506s-1.397,2.345-1.397,4.024c0,1.594,0.436,2.863,1.306,3.809c0.871,0.946,2.014,1.419,3.428,1.419c1.311,0,2.446-0.292,3.405-0.876V184.723z M161.661,179.979c0,3.674-1.654,5.511-4.962,5.511c-3.168,0-4.753-1.767-4.753-5.301v-8.003h1.53v7.902c0,2.683,1.129,4.023,3.387,4.023c2.179,0,3.269-1.295,3.269-3.887v-8.039h1.529V179.979z M179.875,185.271h-1.821l-2.185-3.668c-0.2-0.341-0.395-0.631-0.583-0.871c-0.188-0.24-0.381-0.437-0.578-0.589c-0.198-0.152-0.41-0.263-0.638-0.333s-0.484-0.105-0.769-0.105h-1.257v5.566h-1.529v-13.085h3.896c0.571,0,1.097,0.072,1.58,0.215c0.482,0.143,0.901,0.36,1.256,0.652s0.633,0.655,0.833,1.091c0.2,0.435,0.301,0.944,0.301,1.528c0,0.456-0.068,0.874-0.205,1.254c-0.137,0.381-0.331,0.72-0.583,1.018c-0.252,0.298-0.556,0.552-0.911,0.762s-0.754,0.373-1.197,0.488v0.037c0.218,0.097,0.408,0.208,0.569,0.333c0.161,0.124,0.314,0.272,0.46,0.442s0.29,0.363,0.433,0.579c0.143,0.216,0.302,0.467,0.478,0.753L179.875,185.271z M172.044,173.573v4.744h2.076c0.382,0,0.736-0.058,1.061-0.173s0.605-0.281,0.842-0.497s0.422-0.48,0.555-0.794c0.134-0.313,0.201-0.665,0.201-1.055c0-0.699-0.227-1.245-0.679-1.638c-0.452-0.392-1.106-0.588-1.962-0.588H172.044z M194.182,185.271h-6.919v-13.085h6.628v1.388h-5.099v4.353h4.716v1.377h-4.716v4.581h5.39V185.271z M212.381,184.741v-1.807c0.207,0.183,0.454,0.347,0.742,0.493c0.288,0.146,0.592,0.269,0.911,0.369c0.318,0.101,0.639,0.178,0.96,0.232s0.619,0.082,0.892,0.082c0.941,0,1.644-0.175,2.108-0.524s0.697-0.853,0.697-1.51c0-0.353-0.078-0.66-0.232-0.922s-0.369-0.5-0.642-0.716c-0.273-0.216-0.596-0.423-0.969-0.621c-0.374-0.197-0.776-0.406-1.207-0.625c-0.455-0.23-0.88-0.465-1.275-0.702s-0.737-0.499-1.029-0.785c-0.291-0.285-0.521-0.609-0.688-0.972c-0.167-0.361-0.25-0.786-0.25-1.272c0-0.597,0.13-1.115,0.391-1.556c0.261-0.441,0.604-0.805,1.029-1.091s0.909-0.499,1.453-0.639c0.543-0.14,1.097-0.21,1.662-0.21c1.287,0,2.225,0.155,2.813,0.466v1.725c-0.771-0.535-1.761-0.804-2.968-0.804c-0.334,0-0.668,0.035-1.001,0.105c-0.334,0.07-0.631,0.184-0.893,0.342c-0.261,0.158-0.473,0.362-0.637,0.611c-0.164,0.25-0.246,0.554-0.246,0.913c0,0.334,0.063,0.623,0.187,0.866c0.124,0.243,0.308,0.466,0.551,0.666c0.243,0.201,0.539,0.396,0.888,0.584s0.751,0.396,1.207,0.621c0.467,0.23,0.91,0.475,1.329,0.729c0.419,0.256,0.786,0.538,1.102,0.849c0.316,0.311,0.566,0.654,0.751,1.031c0.185,0.377,0.277,0.809,0.277,1.296c0,0.645-0.126,1.19-0.377,1.638c-0.252,0.447-0.592,0.811-1.02,1.09c-0.428,0.28-0.921,0.482-1.479,0.607c-0.559,0.124-1.147,0.187-1.766,0.187c-0.207,0-0.461-0.017-0.765-0.05s-0.613-0.082-0.929-0.146c-0.315-0.063-0.614-0.143-0.897-0.237C212.777,184.962,212.551,184.856,212.381,184.741z M236.212,173.573h-3.77v11.697h-1.529v-11.697h-3.76v-1.388h9.059V173.573z M248.28,185.489c-1.852,0-3.334-0.611-4.448-1.834c-1.114-1.223-1.671-2.813-1.671-4.771c0-2.105,0.567-3.784,1.703-5.037c1.135-1.253,2.68-1.88,4.634-1.88c1.803,0,3.255,0.608,4.357,1.825c1.102,1.217,1.652,2.808,1.652,4.772c0,2.135-0.564,3.822-1.693,5.063C251.685,184.869,250.173,185.489,248.28,185.489z M248.389,173.354c-1.372,0-2.485,0.496-3.341,1.487c-0.856,0.992-1.284,2.294-1.284,3.905c0,1.612,0.417,2.91,1.252,3.892c0.834,0.982,1.922,1.474,3.264,1.474c1.432,0,2.561-0.468,3.387-1.405c0.826-0.937,1.238-2.247,1.238-3.933c0-1.728-0.4-3.063-1.202-4.005C250.902,173.825,249.797,173.354,248.389,173.354z M272.029,185.271h-1.821l-2.185-3.668c-0.2-0.341-0.395-0.631-0.583-0.871c-0.188-0.24-0.381-0.437-0.578-0.589c-0.198-0.152-0.41-0.263-0.638-0.333s-0.484-0.105-0.769-0.105h-1.257v5.566h-1.529v-13.085h3.896c0.571,0,1.097,0.072,1.58,0.215c0.482,0.143,0.901,0.36,1.256,0.652s0.633,0.655,0.833,1.091c0.2,0.435,0.301,0.944,0.301,1.528c0,0.456-0.068,0.874-0.205,1.254c-0.137,0.381-0.331,0.72-0.583,1.018c-0.252,0.298-0.556,0.552-0.911,0.762s-0.754,0.373-1.197,0.488v0.037c0.218,0.097,0.408,0.208,0.569,0.333c0.161,0.124,0.314,0.272,0.46,0.442s0.29,0.363,0.433,0.579c0.143,0.216,0.302,0.467,0.478,0.753L272.029,185.271z M264.199,173.573v4.744h2.076c0.382,0,0.736-0.058,1.061-0.173s0.605-0.281,0.842-0.497s0.422-0.48,0.555-0.794c0.134-0.313,0.201-0.665,0.201-1.055c0-0.699-0.227-1.245-0.679-1.638c-0.452-0.392-1.106-0.588-1.962-0.588H264.199z M286.336,185.271h-6.919v-13.085h6.628v1.388h-5.099v4.353h4.716v1.377h-4.716v4.581h5.39V185.271z M168.333,47.933c0.635,0.638,0.954,1.395,0.954,2.27c0,0.878-0.318,1.634-0.954,2.271c-0.637,0.717-1.55,1.075-2.742,1.075H132.21c-1.669,0-2.98,0.478-3.935,1.434c-0.795,0.877-1.192,2.072-1.192,3.584v27.48h36.481c1.032,0,1.907,0.319,2.623,0.956c0.555,0.638,0.874,1.395,0.954,2.27c0,0.878-0.318,1.634-0.954,2.271c-0.637,0.717-1.511,1.075-2.623,1.075h-36.481v30.483c0,1.669,0.436,2.899,1.312,3.691c0.793,0.873,1.946,1.311,3.457,1.311h33.739c1.192,0,2.185,0.319,2.98,0.955c0.635,0.639,0.954,1.395,0.954,2.271c0,0.877-0.319,1.634-0.954,2.271c-0.795,0.717-1.788,1.075-2.98,1.075h-34.096c-4.372,0-7.433-0.915-9.18-2.744c-1.749-1.669-2.623-4.574-2.623-8.711v-62.76c0-4.771,1.073-8.233,3.219-10.38c2.066-2.068,5.443-3.103,10.134-3.103h32.546C166.703,46.977,167.618,47.296,168.333,47.933z M223.534,51.636c3.973,3.904,6.199,8.483,6.676,13.74c0.078,1.355-0.238,2.47-0.954,3.346c-0.637,0.797-1.511,1.274-2.623,1.434c-1.034,0.08-1.948-0.159-2.742-0.717c-0.875-0.557-1.353-1.393-1.431-2.509c-0.399-4.779-2.265-8.603-5.604-11.471c-3.18-2.628-6.956-3.942-11.326-3.942c-4.452,0-8.345,1.194-11.684,3.584c-3.498,2.629-5.246,5.975-5.246,10.036c0,5.576,1.112,9.678,3.338,12.307c2.224,2.629,7.073,5.615,14.544,8.961c9.776,4.301,16.095,7.727,18.956,10.275c4.292,3.744,6.438,9.121,6.438,16.129c0,7.169-2.861,13.104-8.583,17.803c-5.007,4.143-10.61,6.213-16.81,6.213c-8.107,0-14.466-1.912-19.075-5.735c-5.246-4.221-8.267-10.673-9.061-19.355c-0.16-1.272,0.119-2.309,0.834-3.106c0.635-0.717,1.431-1.153,2.384-1.314c0.954-0.078,1.788,0.161,2.503,0.718c0.793,0.717,1.271,1.753,1.431,3.106c0.635,6.612,2.9,11.55,6.795,14.814c3.417,2.868,8.066,4.302,13.949,4.302c3.973,0,7.788-1.314,11.445-3.943c4.53-3.185,6.795-7.446,6.795-12.784c0-5.096-1.511-9.08-4.53-11.947c-2.226-2.07-7.194-4.938-14.902-8.603l-1.192-0.598c-8.187-3.823-13.632-6.969-16.333-9.438c-4.214-3.901-6.319-9.12-6.319-15.651c0-7.169,2.305-12.743,6.915-16.728c4.37-3.743,10.053-5.615,17.048-5.615h1.43C213.36,44.945,219.004,47.176,223.534,51.636z M293.756,47.933c0.635,0.638,0.993,1.395,1.073,2.27c0.078,0.878-0.2,1.634-0.834,2.271c-0.715,0.717-1.71,1.075-2.98,1.075h-20.863v79.692c0,1.116-0.399,2.03-1.192,2.747c-0.715,0.637-1.55,0.956-2.503,0.956c-1.034,0-1.908-0.319-2.623-0.956c-0.715-0.717-1.073-1.631-1.073-2.747V53.548h-21.579c-1.829,0-2.783-1.114-2.861-3.346c-0.08-2.15,0.874-3.226,2.861-3.226h49.833C292.046,46.977,292.961,47.296,293.756,47.933z M347.766,58.924c4.37,8.364,6.557,19.038,6.557,32.021c0,12.903-2.187,23.537-6.557,31.9c-4.769,9.4-11.445,14.099-20.029,14.099c-8.584,0-15.26-4.698-20.029-14.099c-4.292-8.363-6.438-18.997-6.438-31.9c0-12.982,2.146-23.656,6.438-32.021c4.769-9.319,11.445-13.979,20.029-13.979C336.32,44.945,342.997,49.604,347.766,58.924z M313.192,63.465c-3.021,7.168-4.53,16.329-4.53,27.479c0,11.072,1.509,20.192,4.53,27.36c3.417,7.966,8.266,11.948,14.545,11.948c6.119,0,10.849-3.982,14.187-11.948c3.1-7.168,4.649-16.288,4.649-27.36c0-11.15-1.55-20.312-4.649-27.479c-3.338-7.965-8.068-11.948-14.187-11.948C321.458,51.517,316.608,55.5,313.192,63.465z M1.395,120.703c1.514-6.585,5.791-11.368,12.83-14.349c7.039-2.979,15.56-4.47,25.561-4.47c11.974,0,22.765,1.55,32.371,4.648c0,3.891-0.542,6.116-1.628,6.676c-15.561-2.538-26.482-3.808-32.765-3.808c-6.086,0-11.744,0.807-16.975,2.419c-2.5,0.822-4.976,2.368-7.426,4.639s-3.676,4.623-3.676,7.058c0,3.028,2.435,5.66,7.303,7.897c3.06,1.612,9.721,2.698,19.985,3.258c12.04-0.526,20.873-1.35,26.499-2.468c8.454-1.385,15.042-4.276,19.763-8.677c4.72-4.399,7.081-9.4,7.081-15.004c0-6.888-2.895-12.424-8.685-16.61c-3.093-2.339-7.994-5.1-14.705-8.28c-6.711-3.18-11.744-5.742-15.1-7.688c-3.355-1.943-6.366-4.654-9.03-8.132c-2.665-3.477-3.997-7.852-3.997-13.126c0-1.877,0.197-3.839,0.592-5.882c1.151-6.724,3.742-13.002,7.772-18.836c4.029-5.833,9.063-10.933,15.1-15.3c6.036-4.367,12.559-7.736,19.565-10.109S95.71,1,102.454,1c5.888,0,10.329,1.333,13.323,3.999c2.993,2.666,4.49,6.188,4.49,10.563c0,2.074-0.609,4.838-1.826,8.294c-2.369,4.52-6.119,8.89-11.251,13.111c-5.132,4.223-11.596,7.893-19.393,11.01c-7.796,3.117-16.58,5.221-26.351,6.309c0-2.441,0.395-4.685,1.185-6.729c5.855-0.824,12.796-2.936,20.824-6.333c8.026-3.397,14.918-7.348,20.676-11.851c5.756-4.502,8.635-8.832,8.635-12.988c-0.362-5.542-3.799-8.313-10.313-8.313c-3.389,0-7.328,0.768-11.818,2.301c-4.49,1.534-8.833,3.39-13.027,5.566s-7.558,4.14-10.091,5.888c-5.033,3.596-9.754,8.182-14.162,13.756c-4.409,5.574-6.695,11.197-6.859,16.871c0.263,4.915,1.883,8.931,4.861,12.048c2.977,3.117,6.884,5.806,11.719,8.064c4.836,2.26,9.82,4.569,14.952,6.928c5.132,2.358,8.964,4.89,11.498,7.595c3.158,3.332,5.37,6.053,6.637,8.163c1.266,2.111,2.08,5.607,2.442,10.49c0,9.165-3.232,16.46-9.696,21.883s-14.401,9.206-23.809,11.35c-9.409,2.143-19.047,3.214-28.917,3.214c-9.409,0-17.625-1.468-24.648-4.406C4.512,134.846,1,130.308,1,124.169C1,123.51,1.132,122.354,1.395,120.703z"/></svg>') no-repeat 40% 0;}
+
+	.sesto		{ opacity:0.75; transition:opacity ease-out 0.2s;}
+.a0	.sesto		{ opacity:0.86;}
+
+
+
+._a0 .btn-edit		{bottom:1.5em;}
+._a0.new .btn-edit	{bottom:-3em;}
+._a0 .btn-folder	{bottom:1.5em;}
+._a0 .btn-file		{bottom:1.5em;}
+
+.edit .btn-edit		{bottom:-3em; opacity:0;}
+.delete .btn-delete	{bottom:1.5em;}
+.edit .btn-folder	{bottom:-3em; opacity:0;}
+.edit .btn-file		{bottom:-3em; opacity:0;}
+.edit .btn-save		{bottom:1.5em;}
+
+.edit .btn-new		{bottom:-3em; opacity:0;}
+
+
+
+button			{opacity:0.75; transition:opacity ease-out 0.2s}
+button:hover		{opacity:0.90 !important;}
+
+._a0 .btn-add		{display:block; width:3em; margin-left:3em; visibility:hidden; opacity:0;}
+._a0.edit .btn-add	{display:block; visibility:visible; height:2em; opacity:0.75; border-radius:0 0 1.5em 1.5em;}
+._a0.edit .btn-add	{transition:height ease-out 0.2s;}
+._a0.edit .btn-add:hover{height:2.5em;}
+
+._a0 .btn-rem		{left:-2.5em; top:0.5em; width:2.5em; height:2.5em; border-radius:1.25em 0 0 1.25em;}
+._a0 .btn-swp		{}
+._a0 .btn-sec		{right:3em;}
+
+.edit .btn-upr		{display:none !important;}
+._a0 .sec .btn-upr	{display:block; visibility:visible;}
+
+
+
+
+p.btn a			{transition:
+				bottom ease-out 0.1s,
+			 	opacity ease-out 0.3s;
+			}
+
+p.btn			{
+			 transition:
+				bottom 0.2s ease-out 0.2s;
+			}
+.zzz p.btn		{bottom:4em;}
+.zzz p.btn a		{opacity:0.85;}
+.zzz p.btn a:hover	{opacity:1;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	.ani				{width:160px; height:3em; top:50%; margin:0 auto; position:relative;}
+	.ani				{text-align:center;}
+
+	.ani b				{width:0.8em; height:0.8em; margin:0 0.75em; background:#fff; background:rgba(255,255,255,0.75); border-radius:100%; display:inline-block; -webkit-animation:ani-bounce 1.4s infinite ease-in-out both; animation:ani-bounce 1.4s infinite ease-in-out both;}
+	.ani .s1			{-webkit-animation-delay:-0.32s; animation-delay:-0.32s}
+	.ani .s2			{-webkit-animation-delay:-0.16s; animation-delay:-0.16s}
+
+@-webkit-keyframes ani-bounce {
+	0%,80%,100%			{-webkit-transform:scale(0)}
+	40%				{-webkit-transform:scale(1)}
+}
+
+@keyframes ani-bounce {
+	0%, 80%, 100%			{transform:scale(0)}
+	40%				{transform:scale(1)}
+}
+
+	.ani				{display:none; transition:height ease-out 0.3s}
+
+	._a0 .ani			{display:block; height:4em; }
+	._a0.loaded .ani 		{display:none;}
+
+</style>
+
+
+
+
+
+
+<style>
+
+	.auth				{}
+	.auth p				{height:auto; background:none; margin:0; padding:0.5em 1em;}
+
+	.auth input.btn,
+	.auth input.fld			{background:#ccc; height:auto; padding:0.75em 1em 0.7em 1em; widht:100%;  min-width:100%; max-width:32em; position:static;}
+	.auth .fld:focus		{background:#eee;}
+
+	.auth input.btn			{color:#ccc; background:#b00; font-weight:bold; padding:1.1em 1em 1em 1em;}
+	.auth input.btn:hover		{color:#eee; background:#c00; cursor:pointer;}
+	.auth input.btn.check,
+	.auth input.btn.check:hover	{background:#777; color:#ccc}
+
+
+	.root .auth			{height:auto;}
+	.root .auth p			{display:none;}
+	.root .auth .logo		{display:block;}
+
+
+.aa	.sesto				{height:9em;}
+.aa	ul				{display:none;}
+.aa	.root				{width:100%;}
+.aa	.auth				{margin:0 auto; width:100%; max-width:24em;}
+.aa	.root .auth p			{display:block;}
+
+
+
+</style>
+
+
+<div id="pads" class="aa"><div class="root">
+
+
+	<form class="auth" onsubmit="auth(this);return false;">
+
+		<p class="logo"><i class="sesto"></i></p>
+		<p><input class="fld" placeholder="Login" type="text" value="user"/></p>
+		<p><input class="fld" placeholder="Password" type="password" value=""/></p>
+		<p><input class="btn" type="submit" value="Login"/></i></p>
+
+	</form>
+
+	<ul>
+		<li><a href="#" onclick="js2(this)">ROOT Test</a></li>
+		<li><a href="#" onclick="js2(this)">Favorites</a></li>
+		<li><a href="#" onclick="js2(this)">Banking</a></li>
+		<li><a href="#" onclick="js2(this)">My pr0n</a></li>
+		<li><a href="#" onclick="js2(this)">Delete</a></li>
+	</ul>
+	
+</div></div>
+
+<script>
+
+	function auth( o ) {
+
+		var
+		i 	= _tags('input', o),
+		usr	= i[0].value,
+		pwd	= i[1].value;
+
+		i[0].disabled =
+		i[1].disabled = 
+		i[2].disabled = true;
+		i[2].classPerk('check');
+		i[2].value = 'Auth. Please wait...'
+
+
+
+		if ('user' == usr )
+		{
+
+			o.parentNode.parentNode.className = 'a0';
+
+			i[0].value = 
+			i[1].value = 'auth';
+		} else {
+
+
+			i[0].disabled =
+			i[1].disabled = 
+			i[2].disabled = false;
+			i[2].classPerk('check', -1);
+			i[2].value = 'Try to login again...'
+		}
+	}
+
+
 </script>
-</head>
-<body>
-    <h3>web key storage</h3>
-    <p>
-    <div id="listener">
-	<script type="text/javascript">
-	    var listener = document.getElementById('listener');
-	    listener.addEventListener('load', moduleDidLoad, true);
-	    listener.addEventListener('message', handleMessage, true);
-	</script>
-	<embed name="nacl_module"
-	       id="themis_secure_cell"
-	       mode="seal"
-	       width=0 height=0
-	       src="{{ static_resolver(filename='pnacl_themis_secure_cell.nmf') }}"
-	       type="application/x-pnacl" />
-    </div>
-    </p>
-    <b>name</b><input id="username"/><br>
-    <b>pass</b><input type=password id="userpass"/><br>
-    <button onclick="get_data()"> Get</button>
-    <div id="encrypted_text_field" hidden=true></div><br>
-    <div id="keys_table_field">
-      <table id='keys_table' border='1' width='100%'>
-	<tr>
-	  <th>url</th>
-	  <th>username</th>
-	  <th>password</th>
-	  <th></th>
-	</tr>
-      </table><button onclick='key_table_add_row()'> Add row</button><br><button onclick='key_table_save()'> Save</button>
-    </div><br>
-    <b>log:</b> <div id="info_field"></div><br>
-    
-</body>
+
+
+
+
+<script>
+
+	function zmatrix() {
+
+		var
+		a  = 0,
+		l  = 0,
+		r  = '';
+
+		for (; l < 60; l++) r += '._l' + l + '{z-index:-' + (600 + l) + ';}';
+		for (; a < 60; a++) r += '._a' + a + '{z-index:-' + (500 - a) + ';}';
+
+		return r;
+	}
+
+	document.getElementsByTagName('style')[0]
+		.appendChild( _txt( zmatrix()));
+
+
+	HTMLElement.prototype.classPerk = function(t,e){function s(t,e){for(var s=[],n={},r=t.length-1;r>-1;)!!t[r]&&!(e==t[r])&&!n[t[r]]&&s.unshift(t[r]),n[t[r--]]=1;return s}var t=t.split(" "),e=e||0,n=this.className.split(" ");if(0==e)n=s(n.concat(t));else if(-1==e)for(var r=t.length-1;r>-1;)n=s(n,t[r--]);else if(1==e)for(var r=t.length-1;r>-1;){var i=t[r--];n.indexOf(i)>-1?n=s(n,i):n.push(i)}else{e=e.split(" ");for(var r=e.length-1;r>-1;)n=s(n,e[r--]);n=s(n.concat(t))}this.className=n.join(" ");return this};
+
+
+	function _txt( t ) {
+
+		return document.createTextNode( t );
+	}
+
+	function _node( n ) {
+
+		return document.createElement( n );
+	}
+
+	function _tags( t, o ) {
+
+		return (o || document).getElementsByTagName( t );
+	}
+
+	function _parent( t, o ) {
+
+		while ( (o = o.parentNode) && t !== o.nodeName && t !== o.id );
+		return o;
+	}
+
+
+
+var
+_UNUSEDNODES;
+
+function js2( o ) {
+
+	clearTimeout( _UNUSEDNODES );
+
+
+/* generate object for tests */
+var ooo = {
+	 name	:	'Big secret'
+	,desc	:	'something cool'
+	,type	:	'note'
+	,data	:	[
+				 {
+
+					 key	:	'URL'
+					,val	:	'http://facebook.com/'
+					,txt	:	0
+					,sec	:	0
+				}
+
+				,{
+
+					 key	:	'Username'
+					,val	:	'Username'
+					,txt	:	0
+					,sec	:	0
+				}
+				,{
+
+					 key	:	'Password'
+					,val	:	'qwerty'
+					,txt	:	0
+					,sec	:	1
+				}
+				,{
+
+					 key	:	'Notes'
+					,val	:	'Some text'
+					,txt	:	1
+					,sec	:	0
+				}
+			]
+};
+
+var
+z = 0,
+aaa = [],
+tmp = Math.round(Math.random() * 4) + 3;
+for (; z < tmp; z ++) {
+
+	aaa[z] = {};
+	aaa[z].name = 'New folder or item ' + z;
+	aaa[z].desc = 'could be protected';
+	aaa[z].type = '';
+
+}
+	aaa.push(ooo);
+
+
+	var
+	p = _parent('DIV', o ),
+	h = p.parentNode,
+	n = h.insertBefore( padNew(), p.nextSibling ),
+	d = n.pos = p.pos + 1 || 1;
+	a = h.childNodes,
+	l = a.length -1;
+
+	n._this = o;
+
+	h.className = 'a' + ((d < 6) ? d : 6);
+	n.className = 'fld _new';
+
+
+	for (; l > 0; l--) {
+
+		if (l > d ) {	if ( -1 !== a[l].className.indexOf('_na') )
+					h.removeChild( a[l] );
+
+			else	a[l].className  = 'fld loaded _a0 _na _l' + l;}
+		if (d > l )	a[l].className  = 'fld _a' + ( d - l );
+	}
+
+
+
+
+
+
+
+
+
+
+
+//n.className += ' loaded';
+
+
+
+
+	setTimeout( function() {
+
+		(function( o ){
+
+		
+			o.className = ( o.nextSibling ) ? 'fld _a0 _back' : 'fld _a0';
+
+			/* garbage collector */
+
+			_UNUSEDNODES = setTimeout( function() {
+
+				(function( o ) {
+
+					var
+					h = o.parentNode;
+					a = h.childNodes,
+					l = a.length -1;
+
+					for (; l > 0; l--) {
+
+						if ( -1 !== a[l].className.indexOf('_na') )
+						h.removeChild( a[l] );
+					}
+				})( o );
+			}, 600 );
+		})( n );
+	}, 0 );
+
+
+
+
+	setTimeout( function() {
+
+		n._title = n._data.appendChild( padTitle( { key: o._name, val: o._desc } ) );
+
+		if	(o._data)
+			padNotes( n,  ooo );
+		else	padFolders( n, aaa );
+
+		n.className += ' loaded';
+	}, 600 );
+}
+
+
+
+
+/* ================================= */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function js( o ) {
+
+	var
+	n = _parent('DIV', o ),
+	d = n.pos,
+	h = n.parentNode,
+	a = h.childNodes,
+	l = a.length -1;
+
+	for (; l > 0; l--) {
+
+		a[l].className = ( d > l ) ? 'fld _a' + ( d - l ) : 'fld na _l' + l;
+	}
+
+	h.className = 'a' + ((d < 6) ? d : 6);
+
+	if('root' !== n.className)
+		n.className = 'fld _a0 loaded';
+}
+
+
+
+	
+
+
+
+
+
+function preloader() {
+
+	var
+	n = _node('div');
+	n.appendChild( _node('b') ).className = 's1';
+	n.appendChild( _node('b') ).className = 's2';
+	n.appendChild( _node('b') ).className = 's3';
+	n.className = 'ani';
+
+	return n;
+}
+
+function padNew() {
+
+	var
+	n = _node('div');
+		n.appendChild( preloader() );
+		n.appendChild( btnBack() );
+
+	n._data = n.appendChild( _node('form') );
+
+	return n;
+}
+
+function padTitle( f ) {
+
+	var
+	p = _node('p');
+	p.className = 'title';
+
+	p.key	= p.appendChild( _node('input') );
+
+			p.key.disabled = true;
+			p.key.readOnly = true;
+			p.key.className	= 'key';
+			p.key.placeholder =
+			p.key.value = 'Title of this item';
+
+
+	p.val	= p.appendChild( _node('input') );
+
+			p.val.readOnly = true;
+			p.val.className	= 'val';
+			p.val.placeholder = 'Please, give it a name';
+			p.val.value = ( 1 == f.sec ) ? '[ protected ]' : f.val;
+		if(f.key)p.val.value = f.key.textContent;
+
+	p.val.onblur =
+	p.val.onkeyup = function() {
+
+		f.key.textContent = ('' !== this.value) ? this.value : 'Unnamed';
+
+	};
+
+	return p;
+}
+
+function padNotes( n, o ) {
+
+	var
+	c = 0,
+	l = o.data.length;
+
+	n.pb	= n.appendChild( _node('p') );
+
+			n.pb.className = 'btn';
+
+
+	n.b1	= n.pb.appendChild( _node('a') );
+
+			n.b1.href = '#';
+			n.b1.className = 'btn-edit';
+			n.b1.onclick = function() {
+
+				var
+				c = 0,
+				l = n.fields.length;
+
+				n._title.val.readOnly = false;
+
+				for(; c < l ; c++) {
+
+					n.fields[c].key.readOnly = false;
+					n.fields[c].val.readOnly = false;	
+				}
+
+				n.classPerk('edit delete');
+				return false;				
+			};
+
+	n.b2	= n.pb.appendChild( _node('a') );
+
+			n.b2.href = '#';
+			n.b2.className = 'btn-save';
+			n.b2.onclick = function() {
+
+				var
+				c = 0,
+				l = n.fields.length;
+
+				/* if Unnamed we set first line as a name */
+
+				if (l && n.fields[c].val && '' == n._title.val.value) {
+
+					n._title.val.value = n.fields[c].val.value;
+					n._title.val.onblur();
+				}
+
+
+				n._title.val.readOnly = true;
+
+				for(; c < l ; c++) {
+
+					n.fields[c].key.readOnly = true;
+					n.fields[c].val.readOnly = true;
+
+					if (n.fields[c].sec) {
+
+						n.fields[c].val.value = '[ protected ]';
+						n.fields[c].b4.removeAttribute('style');
+					}
+				}
+
+				n.classPerk('edit delete', -1);
+				return false;				
+			};
+
+	n.b3	= n.pb.appendChild( _node('a') );
+
+			n.b3.href = '#';
+			n.b3.className = 'btn-delete';
+			n.b3.onclick = function() {
+
+				var
+				c = 0,
+				l = n.fields.length;
+
+				n._title.val.readOnly = true;
+
+				for(; c < l ; c++) {
+
+					n.fields[c].key.readOnly = true;
+					n.fields[c].val.readOnly = true;	
+				}
+
+				n.classPerk('edit delete', -1);
+
+/* del */
+js( n._this );
+
+var
+p = n._this.parentNode;
+p.parentNode.removeChild( p );
+
+				return false;
+			};
+
+
+	n.fields = [];
+
+	for(; c < l ; c++) {
+
+		n.fields[c] = n._data.appendChild( padField( o.data[ c ] ) );
+	}
+
+
+	n.b4 = n._data.appendChild( _node('button') );
+
+			n.b4.type = 'button';
+			n.b4.className = 'btn-add';
+			n.b4.onclick = function() {
+
+				var
+				tmp = n.fields.push( n._data.appendChild( padField( [] ) ) );
+
+				n._data.insertBefore( n.fields[tmp-1], n.b4 );
+
+				n.fields[tmp-1].val.value = '';
+				n.fields[tmp-1].key.value = '';
+
+				n.fields[tmp-1].val.readOnly = false;
+				n.fields[tmp-1].key.readOnly = false;
+			};
+
+	/* new or empty */
+	//alert(u.childNodes.length)
+	n.b1.onclick();
+	n._title.val.focus();
+
+	//tell to top that it was created
+}
+
+function padField( f ) {
+
+	var
+	p = _node('p');
+
+	p.b1	= p.appendChild( _node('button') );
+
+			p.b1.type = 'button';
+			p.b1.className = 'btn-rem';
+			p.b1.onclick = function() {
+
+				var
+				n = _parent('DIV', this );
+
+				n.fields.splice( n.fields.indexOf( p ), 1);
+				p.parentNode.removeChild( p );
+
+				return false;
+			};
+
+	p.b2	= p.appendChild( _node('button') );
+
+			p.b2.type = 'button';
+			p.b2.className = 'btn-swp';
+			p.b2.onclick = function() {
+
+				p.txt = (!p.txt) ? 1 : undefined;
+
+				var
+				old = p.val;
+
+				p.classPerk('txt', (p.txt) ? 0 : -1);
+
+				p.val = p.appendChild( _node( (p.txt) ? 'textarea' : 'input') );
+
+				p.val.value		= old.value;
+				p.val.readOnly		= old.readOnly;
+				p.val.className		= old.className;
+				p.val.placeholder	= old.placeholder;
+				
+				p.removeChild(old);
+				
+				old = null;
+
+				return false;
+			};
+
+	p.b3	= p.appendChild( _node('button') );
+
+			p.b3.type = 'button';
+			p.b3.className = 'btn-sec';
+			p.b3.onclick = function() {
+
+				p.sec = (!p.sec) ? 1 : undefined;
+
+				p.classPerk('sec', (p.sec) ? 0 : -1);
+
+				return false;
+			};
+
+	p.b4	= p.appendChild( _node('button') );
+
+			p.b4.type = 'button';
+			p.b4.className = 'btn-upr';
+			p.b4.onclick = function() {
+
+				p.val.value = 'content is visible now';
+				this.style.display = 'none';
+				return false;
+			};
+
+
+
+	p.key	= p.appendChild( _node('input') );
+
+			p.key.readOnly = true;
+			p.key.className	= 'key';
+			p.key.placeholder = 'Key';
+			p.key.value = f.key;
+
+
+	p.val	= p.appendChild( _node( ( 1 == f.txt ) ? 'textarea' : 'input') );
+
+			p.val.readOnly = true;
+			p.val.className	= 'val';
+			p.val.placeholder = 'Value';
+			p.val.value = ( 1 == f.sec ) ? '[ protected ]' : f.val;
+
+	if (f.sec) {p.sec = 1; p.classPerk('sec');}
+	if (f.txt) {p.txt = 1; p.classPerk('txt');}
+
+	return p;
+}
+
+function padFolders( n, o ) {
+
+	var
+	z = 0,
+	l = o.length,
+	u = n._data.appendChild( _node( 'ul' ) );
+
+	for (; z < l; z++) {
+
+		padLine( o[z] );
+	}
+
+	function padLine( dd ) {
+
+		var
+		nn = u
+			.appendChild( _node( 'li' ) )
+			.appendChild( _node( 'a' ) );
+
+		nn._name = nn
+			.appendChild( _node( 'b' ) )
+			.appendChild( _txt( dd.name ) );
+
+		nn.appendChild( _node( 'br' ) );
+
+		nn._desc = nn
+			.appendChild( _node( 'small' ) )
+			.appendChild( _txt( dd.desc ) );
+
+
+		nn._data = dd.data
+		//nn._name = dd.name;
+		//nn._desc = dd.desc;
+
+		nn.href = '#';
+		nn.onclick = function() {
+
+			var
+			a = _tags('a', n._data),
+			l = a.length;
+
+			for (; 0 < l; l--) {
+
+				a[ l - 1 ].className = '';
+			}
+
+			this.className = 'sel';
+			js2(this);
+//alert(this._name)
+			return false;
+		};
+
+		return nn;
+	}
+
+
+
+	n.pb	= n.appendChild( _node('p') );
+
+			n.pb.className = 'btn';
+
+
+	n.b1	= n.pb.appendChild( _node('a') );
+
+			n.b1.href = '#';
+			n.b1.className = 'btn-edit';
+			n.b1.onclick = function() {
+
+				n._title.val.readOnly = false;
+				n.classPerk('edit');
+
+				/* show delete button if the folder is empty */
+				//alert(u.childNodes.length)
+				n.classPerk('delete');
+
+				return false;
+			};
+
+	n.b2	= n.pb.appendChild( _node('a') );
+
+			n.b2.href = '#';
+			n.b2.className = 'btn-save';
+			n.b2.onclick = function() {
+
+				n._title.val.readOnly = true;
+				n.classPerk('edit delete', -1);
+
+				return false;				
+			};
+
+	n.b3	= n.pb.appendChild( _node('a') );
+
+			n.b3.href = '#';
+			n.b3.className = 'btn-delete';
+			n.b3.onclick = function() {
+
+				n._title.val.readOnly = false;
+//				form.parentNode.className = 'edit';
+
+/* del */
+js( n._this );
+
+var
+p = n._this.parentNode;
+p.parentNode.removeChild( p );
+
+				return false;				
+			};
+
+
+	n.b4	= n.pb.appendChild( _node('a') );
+
+			n.b4.href = '#';
+			n.b4.className = 'btn-new';
+			n.b4.onclick = function() {
+
+				n.classPerk('new', 1);
+				return false;				
+			};
+
+	n.b5	= n.pb.appendChild( _node('a') );
+
+			n.b5.href = '#';
+			n.b5.className = 'btn-new-file';
+			n.b5.onclick = function() {
+
+				var
+				nn = padLine( {name:'New item',desc:'just created',data:''} );
+				nn._data = [];
+				nn.onclick();
+				return false;				
+			};
+
+	n.b6	= n.pb.appendChild( _node('a') );
+
+			n.b6.href = '#';
+			n.b6.className = 'btn-new-folder';
+			n.b6.onclick = function() {
+
+				var
+				nn = padLine( {name:'New folder',desc:'for your secrets',data:''} );
+				nn.onclick();
+				return false;			
+			};
+
+	/* new or empty */
+	//alert(u.childNodes.length)
+	n.b1.onclick();
+	n._title.val.focus();
+}
+
+function btnBack() {
+
+	var
+	n = _node('a');
+	n.href = '#';
+	n.className = 'btn-back';
+
+	n.onclick = function() {
+
+		js( this );
+		return false;
+	}
+
+	return n;
+}
+
+
+</script>
+
+
+<script>
+  	function $( o ) {
+
+		return document.getElementById( o );
+	}
+
+	function _tags( t, o ) {
+
+		return (o || document).getElementsByTagName( t );
+	}
+
+	function _node( n ) {
+
+		return document.createElement( n );
+	}
+
+
+	function _txt( n ) {
+
+		return document.createTextNode( n );
+	}
+
+
+	function _body() {
+
+		return document.getElementsByTagName('body')[0];
+	}
+
+
+	function _now() {
+
+		var
+		t = new Date();
+
+		return (pad(t.getHours(), 2)
+		+ ':' + pad(t.getMinutes(), 2)
+		+ ':' + pad(t.getSeconds(), 2));
+	}
+
+  	/* nacl_module */
+
+	_client = _node('embed');
+	_client.setAttribute('type',		'application/x-pnacl');
+	_client.setAttribute('name',		'nacl_module');
+	_client.setAttribute('src',		'{{ static_resolver(filename="sesto_pnacl_module.nmf") }}');
+	_client.setAttribute('url',		'{{ url }}');
+	_client.setAttribute('server_pub',	'{{ server_public_key }}');
+	_client.setAttribute('server_id',	'{{ server_id }}');
+
+	_body().appendChild( _node('div') ).appendChild( _client );
+
+	_client.parentNode.className = 'listener';
+
+	_client.addEventListener('load', moduleLoaded, true);
+	_client.addEventListener('message', handleMessage, true);
+
+
+	function moduleLoaded() {
+
+		//_log('info: PNACL themis module loaded');
+
+		_client.loaded = 1;
+		(_client.login) && (_client.login())
+	}
+
+
+	function handleMessage( m ) {
+
+		var
+		m	= m.data,
+		cmd	= m[0],
+		args	= m.slice(1);
+
+		if (_command[ cmd ]) {
+
+			_command[ cmd ]( m );
+			return false;
+		}
+
+		_log( cmd + ': ' + args );
+	}
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>
