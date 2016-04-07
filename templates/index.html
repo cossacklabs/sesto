@@ -698,7 +698,7 @@ p.btn			{
 <div id="pads" class="aa"><div class="root">
 
 
-	<form class="auth" onsubmit="auth(this);return false;">
+	<form id="auth" class="auth" onsubmit="auth(this);return false;">
 
 		<p class="logo"><i class="sesto"></i></p>
 		<p><input class="fld" placeholder="Login" type="text" value="user"/></p>
@@ -707,55 +707,10 @@ p.btn			{
 
 	</form>
 
-	<ul>
-		<li><a href="#" onclick="js2(this)">ROOT Test</a></li>
-		<li><a href="#" onclick="js2(this)">Favorites</a></li>
-		<li><a href="#" onclick="js2(this)">Banking</a></li>
-		<li><a href="#" onclick="js2(this)">My pr0n</a></li>
-		<li><a href="#" onclick="js2(this)">Delete</a></li>
+	<ul id="root_folder">
 	</ul>
 	
 </div></div>
-
-<script>
-
-	function auth( o ) {
-
-		var
-		i 	= _tags('input', o),
-		usr	= i[0].value,
-		pwd	= i[1].value;
-
-		i[0].disabled =
-		i[1].disabled = 
-		i[2].disabled = true;
-		i[2].classPerk('check');
-		i[2].value = 'Auth. Please wait...'
-
-
-
-		if ('user' == usr )
-		{
-
-			o.parentNode.parentNode.className = 'a0';
-
-			i[0].value = 
-			i[1].value = 'auth';
-		} else {
-
-
-			i[0].disabled =
-			i[1].disabled = 
-			i[2].disabled = false;
-			i[2].classPerk('check', -1);
-			i[2].value = 'Try to login again...'
-		}
-	}
-
-
-</script>
-
-
 
 
 <script>
@@ -807,7 +762,7 @@ var
 _UNUSEDNODES;
 
 function js2( o ) {
-
+alert(o.id);
 	clearTimeout( _UNUSEDNODES );
 
 
@@ -1486,11 +1441,6 @@ function btnBack() {
 		return document.getElementById( o );
 	}
 
-	function _tags( t, o ) {
-
-		return (o || document).getElementsByTagName( t );
-	}
-
 	function _node( n ) {
 
 		return document.createElement( n );
@@ -1519,6 +1469,10 @@ function btnBack() {
 		+ ':' + pad(t.getSeconds(), 2));
 	}
 
+	function _log(message){
+	        alert(message);
+	}
+
   	/* nacl_module */
 
 	_client = _node('embed');
@@ -1539,13 +1493,30 @@ function btnBack() {
 
 	function moduleLoaded() {
 
-		//_log('info: PNACL themis module loaded');
+		_log('info: PNACL themis module loaded');
 
 		_client.loaded = 1;
 		(_client.login) && (_client.login())
 	}
 
 
+	_command = {
+	login_failed : function (m){
+	                var i = _tags('input', $("auth"));
+			i[0].disabled =
+			i[1].disabled = 
+			i[2].disabled = false;
+			i[2].classPerk('check', -1);
+	 		i[2].value = 'Try to login again...'
+	      }
+	      ,root_folder : function(m){
+	               $("root_folder").innerHTML='<li><a href="#" onclick="js2(this)" id="'+m[1]+'">'+m[2]+'</a></li>';
+		       $("auth").parentNode.parentNode.className = 'a0';
+	      }
+	
+	};
+	
+	
 	function handleMessage( m ) {
 
 		var
@@ -1560,6 +1531,22 @@ function btnBack() {
 		}
 
 		_log( cmd + ': ' + args );
+	};
+	
+	function auth( o ) {
+
+		var
+	        i 	= _tags('input', o),
+                usr = i[0].value,
+	        pwd = i[1].value;
+
+		i[0].disabled =
+		i[1].disabled = 
+		i[2].disabled = true;
+		i[2].classPerk('check');
+		i[2].value = 'Auth. Please wait...'
+
+	        _client.postMessage(['login', usr, pwd]);
 	}
 </script>
 

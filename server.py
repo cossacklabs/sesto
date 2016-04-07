@@ -1,3 +1,4 @@
+#!/usr/bin/python3.5
 #
 # Copyright (c) 2015 Cossack Labs Limited
 #
@@ -29,27 +30,38 @@ import aiohttp_jinja2
 
 from pythemis import ssession
 from pythemis import skeygen
+from pythemis import scomparator;
 
+import sqlite3
+dbconn = sqlite3.connect('sesto.db');
+try:
+    c = dbconn.cursor()
+    # Create table
+    c.execute('''CREATE TABLE users (user text, password text, rood_id int)''');
+    c.execute('''CREATE TABLE data (id INTEGER PRIMARY KEY AUTOINCREMENT, data blob)''');
+    dbconn.commit()
+except sqlite3.OperationalError:
+    a=1;
+    
+def get_user_password(username):
+    c = dbconn.cursor();
+    t = (username,)
+    c.execute('SELECT password FROM users WHERE user=?', t);
+    return c.fetchone();
+
+def get_user_root_id(username):
+    c = dbconn.cursor();
+    t = (username,)
+    c.execute('SELECT root_id FROM users WHERE user=?', t);
+    print(c.fetchone())
+
+#def new_user(username, password):
+#    if get_user_password(username) is None:
+#        
 
 class Transport(ssession.mem_transport):  # necessary callback
     def get_pub_key_by_id(self, user_id):
-        return base64.b64decode(user_id.decode("utf8"))
-
-
-class COMMAND:
-    NEW_ROOM = 'ROOM.CREATE'
-    ROOM_CREATED = 'ROOM.CREATED'
-    OPEN_ROOM = 'ROOM.OPEN'
-    OPENED_ROOM = 'ROOM.OPENED'
-    ERROR_ROOM = 'ROOM.NOT_EXIST'
-    INVITE = 'ROOM.INVITE.VERIFICATION_REQUEST'
-    INVITE_RESPONSE = 'ROOM.INVITE.VERIFICATION_RESPONSE'
-    INVALID_INVITE = 'ROOM.INVITE.DECLINED'
-    MESSAGE = 'ROOM.MESSAGE'
-    MESSAGE_KEY_ROTATE = 'ROOM.MESSAGE.KEY.ROTATE'
-    MESSAGE_ERROR = 'ROOM.MESSAGE.ERROR'
-    PUBLIC_KEY = 'PUBKEY'
-    ERROR = 'ERROR'
+        return user_id;
 
 
 id_symbols = string.ascii_letters + string.digits
@@ -57,6 +69,35 @@ def generate_id():
     return ''.join([random.choice(id_symbols) for _ in range(32)])
 
 
+def on_auth1_message(msg, ws_response, session, comparator):
+    p=get_user_password(msg[1]);
+    if p is None:
+        ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
+    else:
+        print(p);
+        comparator = scomparator.scomparator(p);
+        try:
+            data = base64.b64encode(comparator.proceed_compare(base64.b64decode(msg[2]))).decode("UTF-8");
+            ws_response.send_str(base64.b64encode(session.wrap(("AUTH1 "+data).encode("UTF-8"))).decode("UTF-8"));
+            return comparator;
+        except Exception:
+            ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
+            
+def on_auth2_message(msg, ws_response, session, comparator):
+    try:
+        data = base64.b64encode(comparator.proceed_compare(base64.b64decode(msg[2]))).decode("UTF-8");
+        if comaparator.rezult() != scomparator.SCOMAPARATOR_CODES.NOT_MATCH:
+            ws_response.send_str(base64.b64encode(session.wrap(("AUTH2 "+data).encode("UTF-8"))).decode("UTF-8"));
+            return True;
+        else:
+            return False
+    except Exception:
+        ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
+        return False
+            
+handlers_map = {"AUTH1": on_auth1_message,
+                "AUTH2:: on_auth2_message}
+            
 @asyncio.coroutine
 def wshandler(request):
     logger.info('new connection')
@@ -64,6 +105,7 @@ def wshandler(request):
     yield from ws_response.prepare(request)
     pub_key = ""
     session = ssession.ssession(b'server', server_private_key, Transport())
+    authorized = False
     while True:
         message = yield from ws_response.receive()
         if message.tp == web.MsgType.text:
@@ -71,8 +113,9 @@ def wshandler(request):
             if msg.is_control:
                ws_response.send_str(base64.b64encode(msg).decode("UTF-8"));
             else:
-                msg = msg.decode("UTF-8")
-                logger.info('request:' + msg)
+                logger.info('request:' + msg.decode("UTF-8"))
+                msg = msg.decode("UTF-8").split();
+                authorized = handlers_map[msg[0]](msg, ws_response, session, authorized)
         elif message.tp == web.MsgType.closed or message.tp == web.MsgType.close:
             if pub_key in online:
                 del online[pub_key]
