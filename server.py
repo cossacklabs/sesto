@@ -23,6 +23,7 @@ import random
 import string
 import asyncio
 import base64
+import json
 
 import jinja2
 from aiohttp import web
@@ -30,14 +31,15 @@ import aiohttp_jinja2
 
 from pythemis import ssession
 from pythemis import skeygen
-from pythemis import scomparator;
+from pythemis import scomparator
+from pythemis import scell
 
 import sqlite3
 dbconn = sqlite3.connect('sesto.db');
 try:
     c = dbconn.cursor()
     # Create table
-    c.execute('''CREATE TABLE users (user text, password text, rood_id int)''');
+    c.execute('''CREATE TABLE users (user text, password text, root_id blob)''');
     c.execute('''CREATE TABLE data (id INTEGER PRIMARY KEY AUTOINCREMENT, data blob)''');
     dbconn.commit()
 except sqlite3.OperationalError:
@@ -53,11 +55,47 @@ def get_user_root_id(username):
     c = dbconn.cursor();
     t = (username,)
     c.execute('SELECT root_id FROM users WHERE user=?', t);
-    print(c.fetchone())
+    return c.fetchone()[0];
 
-#def new_user(username, password):
-#    if get_user_password(username) is None:
-#        
+def get_data_by_id(id):
+    c = dbconn.cursor();
+    t = (id,)
+    c.execute('SELECT data FROM data WHERE id=?', t);
+    return c.fetchone()
+    
+def update_data_by_id(id, data):
+    c = dbconn.cursor();
+    t = (sqlite3.Binary(data), id,)
+    c.execute('UPDATE data SET data=? WHERE id=?', t);
+    dbconn.commit()
+
+def new_folder(context):
+    c = dbconn.cursor();
+    passwd=generate_pass();
+    enc=scell.scell_seal(passwd.encode("UTF-8"));
+    c.execute("INSERT INTO data (data) VALUES (?)", [sqlite3.Binary(enc.encrypt(base64.b64encode(b"{ \"type\":\"folder\",\"name\": \"Folder\", \"desc\":\"folder\",\"context\": []}"), context.encode('utf8'))), ] );
+    dbconn.commit()
+    return c.lastrowid, passwd;
+
+def new_file(context):
+    c = dbconn.cursor();
+    passwd=generate_pass();
+    enc=scell.scell_seal(passwd.encode("UTF-8"));
+    c.execute("INSERT INTO data (data) VALUES (?)", [sqlite3.Binary(enc.encrypt(base64.b64encode(b"{ \"type\":\"file\",\"name\": \"File\", \"desc\":\"file\",\"context\": []}"), context.encode('utf8'))), ] );
+    dbconn.commit()
+    return c.lastrowid, passwd;
+
+def del_by_id(id):
+    c = dbconn.cursor();
+    t = (id,)
+    c.execute("DELETE FROM data WHERE id=?", t);
+    dbconn.commit();
+
+
+
+id_symbols = string.ascii_letters + string.digits
+def generate_pass():
+    return ''.join([random.choice(id_symbols) for _ in range(32)])
 
 class Transport(ssession.mem_transport):  # necessary callback
     def get_pub_key_by_id(self, user_id):
@@ -74,8 +112,7 @@ def on_auth1_message(msg, ws_response, session, comparator):
     if p is None:
         ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
     else:
-        print(p);
-        comparator = scomparator.scomparator(p);
+        comparator = scomparator.scomparator(p[0].encode("UTF-8"));
         try:
             data = base64.b64encode(comparator.proceed_compare(base64.b64decode(msg[2]))).decode("UTF-8");
             ws_response.send_str(base64.b64encode(session.wrap(("AUTH1 "+data).encode("UTF-8"))).decode("UTF-8"));
@@ -86,17 +123,136 @@ def on_auth1_message(msg, ws_response, session, comparator):
 def on_auth2_message(msg, ws_response, session, comparator):
     try:
         data = base64.b64encode(comparator.proceed_compare(base64.b64decode(msg[2]))).decode("UTF-8");
-        if comaparator.rezult() != scomparator.SCOMAPARATOR_CODES.NOT_MATCH:
-            ws_response.send_str(base64.b64encode(session.wrap(("AUTH2 "+data).encode("UTF-8"))).decode("UTF-8"));
+        sc = scell.scell_seal(get_user_password(msg[1])[0].encode("UTF-8"))
+        rr = int.from_bytes((sc.decrypt(get_user_root_id(msg[1]),msg[1].encode("UTF-8"))), byteorder='big');
+        if comparator.result() != scomparator.SCOMPARATOR_CODES.NOT_MATCH:
+            ws_response.send_str(base64.b64encode(session.wrap(("AUTH2 "+data+" "+str(rr)).encode("UTF-8"))).decode("UTF-8"));
             return True;
-        else:
-            return False
     except Exception:
-        ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
+        a=1
+    ws_response.send_str(base64.b64encode(session.wrap(b"INVALID_LOGIN")).decode("UTF-8"));
+    return False
+
+def on_get_message(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
         return False
-            
+    d=get_data_by_id(msg[1])
+    if d is None:
+        logger.info("not found", msg[1])
+        return False;
+    try:
+        sc = scell.scell_seal(msg[2].encode("UTF-8"))
+        d=sc.decrypt(d[0], msg[3].encode("UTF-8"));
+        ws_response.send_str(base64.b64encode(session.wrap("GET {} {}".format(msg[1], d.decode("UTF-8")).encode("UTF-8"))).decode("UTF-8"));
+        return True
+    except Exception:
+        logger.info("decription_error")
+    return False
+    
+def on_update_message(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
+        return False
+    try:
+        sc = scell.scell_seal(msg[2].encode("UTF-8"))
+        d=sc.encrypt(msg[4].encode("UTF-8"), msg[3].encode("UTF-8"));
+        update_data_by_id(msg[1], d)
+        return True
+    except Exception:
+        logger.info("decription_error")
+    return False
+
+def on_new_folder(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
+        return False
+    d=get_data_by_id(msg[1])    
+    if d is None:
+        logger.info("not found", msg[1])
+        return False;
+    try:
+        sc = scell.scell_seal(msg[2].encode("UTF-8"))
+        d=base64.b64decode(sc.decrypt(d[0], msg[3].encode("UTF-8")));
+        jj=json.loads(d.decode("UTF-8"));
+        new_id, new_pass=new_folder(msg[3]);
+        jj["context"].append({"type":"folder", "name":"New Folder","desc":"folder", "id":new_id, "password":new_pass})
+        update_data_by_id(msg[1], sc.encrypt(base64.b64encode(json.dumps(jj).encode("UTF-8")), msg[3].encode("UTF-8")))
+        ws_response.send_str(base64.b64encode(session.wrap("NEW_FOLDER {}".format(new_id).encode("UTF-8"))).decode("UTF-8"));
+        return True;
+    except Exception:
+        logger.info("decription_error")
+    return False
+
+def on_get_context_info(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
+        return False
+    jj=json.loads(base64.b64decode(msg[2]).decode("UTF-8"));
+    res="{\"context\":["
+    for ctx in jj["context_info"]:
+        sc=scell.scell_seal(ctx["password"].encode("UTF-8"));
+        d=json.loads(base64.b64decode(sc.decrypt(get_data_by_id(ctx["id"])[0],msg[1].encode("UTF-8"))).decode("UTF-8"));
+        res+="{\"name\":\""+d["name"]+"\",\"desc\":\""+d["desc"]+"\",\"id\":"+str(ctx["id"])+"}"
+        if ctx != jj["context_info"][-1]:
+            res+=",";
+    res+="]}";
+    ws_response.send_str(base64.b64encode(session.wrap("GET_CONTEXT {}".format(base64.b64encode(res.encode("UTF-8")).decode("UTF-8")).encode("UTF-8"))).decode("UTF-8"));
+    return True;
+
+def on_new_file(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
+        return False
+    d=get_data_by_id(msg[1])    
+    if d is None:
+        logger.info("not found", msg[1])
+        return False;
+    try:
+        sc = scell.scell_seal(msg[2].encode("UTF-8"))
+        d=base64.b64decode(sc.decrypt(d[0], msg[3].encode("UTF-8")));
+        jj=json.loads(d.decode("UTF-8"));
+        new_id, new_pass=new_file(msg[3]);
+        jj["context"].append({"type":"file", "name":"New File","desc":"new file", "id":new_id, "password":new_pass})
+        update_data_by_id(msg[1], sc.encrypt(base64.b64encode(json.dumps(jj).encode("UTF-8")), msg[3].encode("UTF-8")))
+        ws_response.send_str(base64.b64encode(session.wrap("NEW_FILE {}".format(new_id).encode("UTF-8"))).decode("UTF-8"));
+        return True;
+    except Exception:
+        logger.info("decription_error")
+    return False
+
+def on_del(msg, ws_response, session, is_authorized):
+    if not is_authorized:
+        logger.info("not_authorized")
+        return False
+    d=get_data_by_id(msg[1])    
+    if d is None:
+        logger.info("not found", msg[1])
+        return False;
+    try:
+        sc = scell.scell_seal(msg[3].encode("UTF-8"))
+        d=base64.b64decode(sc.decrypt(d[0], msg[4].encode("UTF-8")));
+        jj=json.loads(d.decode("UTF-8"));
+        for a in jj["context"]:
+            if a["id"] == int(msg[2]):
+                jj["context"].remove(a);
+        update_data_by_id(msg[1], sc.encrypt(base64.b64encode(json.dumps(jj).encode("UTF-8")), msg[4].encode("UTF-8")))
+        del_by_id(int(msg[2]));
+        return True;
+    except Exception:
+      logger.info("decription_error")
+    return False
+
+        
 handlers_map = {"AUTH1": on_auth1_message,
-                "AUTH2:: on_auth2_message}
+                "AUTH2": on_auth2_message,
+                "GET": on_get_message,
+                "UPDATE": on_update_message,
+                "NEW_FOLDER": on_new_folder,
+                "GET_CONTEXT_INFO": on_get_context_info,
+                "NEW_FILE": on_new_file,
+                "DEL_FILE": on_del,
+                "DEL_FOLDER": on_del}
             
 @asyncio.coroutine
 def wshandler(request):
@@ -113,7 +269,7 @@ def wshandler(request):
             if msg.is_control:
                ws_response.send_str(base64.b64encode(msg).decode("UTF-8"));
             else:
-                logger.info('request:' + msg.decode("UTF-8"))
+#                logger.info('request:' + msg.decode("UTF-8"))
                 msg = msg.decode("UTF-8").split();
                 authorized = handlers_map[msg[0]](msg, ws_response, session, authorized)
         elif message.tp == web.MsgType.closed or message.tp == web.MsgType.close:

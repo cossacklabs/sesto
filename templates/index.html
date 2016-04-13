@@ -38,7 +38,7 @@
 
 
 
-
+	.listener                               {width:0; height:0;}
 	.btn-back				{display:block; width:3em; height:3em; background:#fff; position:absolute; z-index:1; top:2em; right:0;}
 	.btn-back				{background:url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#fff" d="M37,48c-0.512,0-1.023-0.195-1.414-0.586L20.171,32l15.415-15.414c0.781-0.781,2.047-0.781,2.828,0c0.781,0.781,0.781,2.047,0,2.828L25.829,32l12.585,12.586c0.781,0.781,0.781,2.047,0,2.828C38.023,47.805,37.512,48,37,48z"/></svg>') no-repeat;}
 	.btn-back				{transition:opacity ease-out 0.3s;}
@@ -701,8 +701,8 @@ p.btn			{
 	<form id="auth" class="auth" onsubmit="auth(this);return false;">
 
 		<p class="logo"><i class="sesto"></i></p>
-		<p><input class="fld" placeholder="Login" type="text" value="user"/></p>
-		<p><input class="fld" placeholder="Password" type="password" value=""/></p>
+		<p><input class="fld" placeholder="Login" type="text"/></p>
+		<p><input class="fld" placeholder="Password" type="password"/></p>
 		<p><input class="btn" type="submit" value="Login"/></i></p>
 
 	</form>
@@ -760,63 +760,66 @@ p.btn			{
 
 var
 _UNUSEDNODES;
-
-function js2( o ) {
-alert(o.id);
+    var global_o;
+    var global_n;
+    var global_p;
+    function js2( o ) {
+    global_o=o;
+    _client.postMessage(['get', o.id])
 	clearTimeout( _UNUSEDNODES );
 
 
 /* generate object for tests */
-var ooo = {
-	 name	:	'Big secret'
-	,desc	:	'something cool'
-	,type	:	'note'
-	,data	:	[
-				 {
+//var ooo = {
+//	 name	:	'Big secret'
+//	,desc	:	'something cool'
+//	,type	:	'note'
+//	,data	:	[
+//				 {
+///
+//					 key	:	'URL'
+//					,val	:	'http://facebook.com/'
+//					,txt	:	0
+//					,sec	:	0
+//				}
+//
+//				,{
+//
+//					 key	:	'Username'
+//					,val	:	'Username'
+//					,txt	:	0
+//					,sec	:	0
+//				}
+//				,{
+//
+//					 key	:	'Password'
+//					,val	:	'qwerty'
+//					,txt	:	0
+//					,sec	:	1
+//				}
+//				,{
+//
+//					 key	:	'Notes'
+//					,val	:	'Some text'
+//					,txt	:	1
+//					,sec	:	0
+//				}
+//			]
+//};
 
-					 key	:	'URL'
-					,val	:	'http://facebook.com/'
-					,txt	:	0
-					,sec	:	0
-				}
+//var
+//z = 0,
+//aaa = [];//,
+//tmp = Math.round(Math.random() * 4) + 3;
+//for (; z < tmp; z ++) {
 
-				,{
-
-					 key	:	'Username'
-					,val	:	'Username'
-					,txt	:	0
-					,sec	:	0
-				}
-				,{
-
-					 key	:	'Password'
-					,val	:	'qwerty'
-					,txt	:	0
-					,sec	:	1
-				}
-				,{
-
-					 key	:	'Notes'
-					,val	:	'Some text'
-					,txt	:	1
-					,sec	:	0
-				}
-			]
-};
-
-var
-z = 0,
-aaa = [],
-tmp = Math.round(Math.random() * 4) + 3;
-for (; z < tmp; z ++) {
-
-	aaa[z] = {};
-	aaa[z].name = 'New folder or item ' + z;
-	aaa[z].desc = 'could be protected';
-	aaa[z].type = '';
-
-}
-	aaa.push(ooo);
+//	aaa[z] = {};
+//	aaa[z].name = 'New folder or item ' + z;
+//	aaa[z].desc = 'could be protected';
+//	aaa[z].type = '';
+//
+//}
+//	aaa.push(ooo);
 
 
 	var
@@ -826,7 +829,9 @@ for (; z < tmp; z ++) {
 	d = n.pos = p.pos + 1 || 1;
 	a = h.childNodes,
 	l = a.length -1;
+	global_n=n;     
 
+	n.id="Pad"+o.id;
 	n._this = o;
 
 	h.className = 'a' + ((d < 6) ? d : 6);
@@ -887,17 +892,16 @@ for (; z < tmp; z ++) {
 
 
 
-
-	setTimeout( function() {
-
-		n._title = n._data.appendChild( padTitle( { key: o._name, val: o._desc } ) );
-
-		if	(o._data)
-			padNotes( n,  ooo );
-		else	padFolders( n, aaa );
-
-		n.className += ' loaded';
-	}, 600 );
+//	setTimeout( function() {
+//
+//		n._title = n._data.appendChild( padTitle( { key: o._name, val: o._desc } ) );
+//
+//		if	(o._data)
+//			padNotes( n,  ooo );
+//		else	padFolders( n, aaa );
+//
+//		n.className += ' loaded';
+//	}, 600 );
 }
 
 
@@ -1014,7 +1018,7 @@ function padTitle( f ) {
 			p.key.readOnly = true;
 			p.key.className	= 'key';
 			p.key.placeholder =
-			p.key.value = 'Title of this item';
+			p.key.value = f.key.textContent;
 
 
 	p.val	= p.appendChild( _node('input') );
@@ -1039,7 +1043,7 @@ function padNotes( n, o ) {
 
 	var
 	c = 0,
-	l = o.data.length;
+	l = o.context.length;
 
 	n.pb	= n.appendChild( _node('p') );
 
@@ -1073,7 +1077,6 @@ function padNotes( n, o ) {
 			n.b2.href = '#';
 			n.b2.className = 'btn-save';
 			n.b2.onclick = function() {
-
 				var
 				c = 0,
 				l = n.fields.length;
@@ -1096,12 +1099,23 @@ function padNotes( n, o ) {
 
 					if (n.fields[c].sec) {
 
-						n.fields[c].val.value = '[ protected ]';
+					  n.fields[c].val.value = '[ protected ]';
 						n.fields[c].b4.removeAttribute('style');
 					}
 				}
 
-				n.classPerk('edit delete', -1);
+					  n.classPerk('edit delete', -1);
+					  res={name:n._title.val.value,
+					  desc:n._title.key.value,
+					  type:'file',
+					  id:n._this.id,
+					  context:[]};
+				for(c=0;c<l;c++){
+					    res.context.push({val: (n.fields[c].sec)?(n.fields[c].val._value):(n.fields[c].val.value), key: n.fields[c].key.value, txt:(n.fields[c].txt)?true:false, sec:(n.fields[c].sec)?true:false} )
+					    }
+					    _client.postMessage(["update", n._this.id, JSON.stringify(res)]);
+					    //alert(JSON.stringify(res));
+					  
 				return false;				
 			};
 
@@ -1110,7 +1124,7 @@ function padNotes( n, o ) {
 			n.b3.href = '#';
 			n.b3.className = 'btn-delete';
 			n.b3.onclick = function() {
-
+//					    _client.postMessage(["del_file", n._this.id]);
 				var
 				c = 0,
 				l = n.fields.length;
@@ -1125,13 +1139,15 @@ function padNotes( n, o ) {
 
 				n.classPerk('edit delete', -1);
 
+
 /* del */
 js( n._this );
 
 var
 p = n._this.parentNode;
+//alert(JSON.stringify(["del_file", p.parentNode.parentNode.parentNode._this.id, n._this.id]));
+_client.postMessage(["del_file", p.parentNode.parentNode.parentNode._this.id, n._this.id]);
 p.parentNode.removeChild( p );
-
 				return false;
 			};
 
@@ -1140,7 +1156,7 @@ p.parentNode.removeChild( p );
 
 	for(; c < l ; c++) {
 
-		n.fields[c] = n._data.appendChild( padField( o.data[ c ] ) );
+		n.fields[c] = n._data.appendChild( padField( o.context[ c ] ) );
 	}
 
 
@@ -1164,7 +1180,7 @@ p.parentNode.removeChild( p );
 
 	/* new or empty */
 	//alert(u.childNodes.length)
-	n.b1.onclick();
+	//n.b1.onclick();
 	n._title.val.focus();
 
 	//tell to top that it was created
@@ -1222,11 +1238,15 @@ function padField( f ) {
 			p.b3.type = 'button';
 			p.b3.className = 'btn-sec';
 			p.b3.onclick = function() {
-
+		  global_p=p;
 				p.sec = (!p.sec) ? 1 : undefined;
-
+		  if(p.sec){
+		  _client.postMessage(["enc", p.val.value]);
+		  }else{
+		  _client.postMessage(["dec", p.val._value]);
+		  }
 				p.classPerk('sec', (p.sec) ? 0 : -1);
-
+		  
 				return false;
 			};
 
@@ -1235,8 +1255,9 @@ function padField( f ) {
 			p.b4.type = 'button';
 			p.b4.className = 'btn-upr';
 			p.b4.onclick = function() {
-
-				p.val.value = 'content is visible now';
+		  global_p=p;
+		  _client.postMessage(["dec", p.val._value]);
+//				p.val.value = 'content is visible now';
 				this.style.display = 'none';
 				return false;
 			};
@@ -1255,9 +1276,14 @@ function padField( f ) {
 
 			p.val.readOnly = true;
 			p.val.className	= 'val';
-			p.val.placeholder = 'Value';
-			p.val.value = ( 1 == f.sec ) ? '[ protected ]' : f.val;
-
+		        p.val.placeholder = 'Value';
+		        if(f.sec){
+		           p.val._value = f.val;
+		           p.val.value = '[protected]';
+		        }else{
+		             p.val.value = f.val;
+		        }
+		 
 	if (f.sec) {p.sec = 1; p.classPerk('sec');}
 	if (f.txt) {p.txt = 1; p.classPerk('txt');}
 
@@ -1268,12 +1294,12 @@ function padFolders( n, o ) {
 
 	var
 	z = 0,
-	l = o.length,
+	l = o["context"].length,	  
 	u = n._data.appendChild( _node( 'ul' ) );
-
+		  
 	for (; z < l; z++) {
 
-		padLine( o[z] );
+		padLine( o["context"][z] );
 	}
 
 	function padLine( dd ) {
@@ -1287,6 +1313,7 @@ function padFolders( n, o ) {
 			.appendChild( _node( 'b' ) )
 			.appendChild( _txt( dd.name ) );
 
+		nn.id=dd.id;
 		nn.appendChild( _node( 'br' ) );
 
 		nn._desc = nn
@@ -1294,7 +1321,8 @@ function padFolders( n, o ) {
 			.appendChild( _txt( dd.desc ) );
 
 
-		nn._data = dd.data
+		nn._data = dd.data;
+		nn._type = 'folder';   
 		//nn._name = dd.name;
 		//nn._desc = dd.desc;
 
@@ -1347,10 +1375,10 @@ function padFolders( n, o ) {
 			n.b2.href = '#';
 			n.b2.className = 'btn-save';
 			n.b2.onclick = function() {
-
 				n._title.val.readOnly = true;
 				n.classPerk('edit delete', -1);
-
+				n._this._data["name"]=n._title.val.value;
+				_client.postMessage(["update", n._this.id, JSON.stringify(n._this._data)]);
 				return false;				
 			};
 
@@ -1360,15 +1388,15 @@ function padFolders( n, o ) {
 			n.b3.className = 'btn-delete';
 			n.b3.onclick = function() {
 
-				n._title.val.readOnly = false;
-//				form.parentNode.className = 'edit';
+				   n._title.val.readOnly = false;
 
-/* del */
-js( n._this );
-
-var
-p = n._this.parentNode;
-p.parentNode.removeChild( p );
+				   /* del */
+				   js( n._this );
+				   
+				   var
+				   p = n._this.parentNode;
+				   _client.postMessage(["del_folder", p.parentNode.parentNode.parentNode._this.id, n._this.id]);
+				   p.parentNode.removeChild( p );
 
 				return false;				
 			};
@@ -1390,11 +1418,9 @@ p.parentNode.removeChild( p );
 			n.b5.className = 'btn-new-file';
 			n.b5.onclick = function() {
 
-				var
-				nn = padLine( {name:'New item',desc:'just created',data:''} );
-				nn._data = [];
-				nn.onclick();
-				return false;				
+				   _client.postMessage(['add_file', n._this.id]);
+				   _client.postMessage(['get',  n._this.id]);
+				   return false;				
 			};
 
 	n.b6	= n.pb.appendChild( _node('a') );
@@ -1403,15 +1429,13 @@ p.parentNode.removeChild( p );
 			n.b6.className = 'btn-new-folder';
 			n.b6.onclick = function() {
 
-				var
-				nn = padLine( {name:'New folder',desc:'for your secrets',data:''} );
-				nn.onclick();
-				return false;			
+				   _client.postMessage(['add_folder', n._this.id]);
+				   global_n=n;
+				   _client.postMessage(['get',  n._this.id]);
+				   return false;			
 			};
 
 	/* new or empty */
-	//alert(u.childNodes.length)
-	n.b1.onclick();
 	n._title.val.focus();
 }
 
@@ -1493,7 +1517,7 @@ function btnBack() {
 
 	function moduleLoaded() {
 
-		_log('info: PNACL themis module loaded');
+//		_log('info: PNACL themis module loaded');
 
 		_client.loaded = 1;
 		(_client.login) && (_client.login())
@@ -1501,7 +1525,8 @@ function btnBack() {
 
 
 	_command = {
-	login_failed : function (m){
+	      "login_failed" : function (m){
+	                //_log(m[1]);
 	                var i = _tags('input', $("auth"));
 			i[0].disabled =
 			i[1].disabled = 
@@ -1509,11 +1534,47 @@ function btnBack() {
 			i[2].classPerk('check', -1);
 	 		i[2].value = 'Try to login again...'
 	      }
-	      ,root_folder : function(m){
-	               $("root_folder").innerHTML='<li><a href="#" onclick="js2(this)" id="'+m[1]+'">'+m[2]+'</a></li>';
+	      ,"root_id" : function(m){
+			var
+		        nn = $("root_folder")
+			     .appendChild( _node( 'li' ) )
+	                     .appendChild( _node( 'a' ) );
+	                nn.id=m[1];
+	                nn._name= nn.appendChild( _txt( "root" ) );
+	                nn.onclick=function(){js2(this);}
+	                nn.href='#';
 		       $("auth").parentNode.parentNode.className = 'a0';
 	      }
-	
+//	      , "error" : function(m){
+//	              _log(m[1]); 
+//	      }
+	      , "get" : function(m){
+//	             _log(m[1]);
+	             arr=JSON.parse(m[1])
+                     setTimeout( function() {
+	             while (global_n._data.firstChild) global_n._data.removeChild(global_n._data.firstChild);
+
+	            global_n._title = global_n._data.appendChild( padTitle( { key: global_o._name, val: global_o._desc } ) );
+	            global_n._title.val.value=arr["name"];
+	             global_o._data=arr
+		     if	(arr["type"]=="file")
+			padNotes( global_n,  arr );
+	             else padFolders( global_n, arr );
+	             global_n.className += ' loaded';
+
+	              }, 600 );
+	      }
+	      , "new_folder": function(m){
+	      }
+	      , "new_file": function(m){
+	      }
+              , "enc_done": function(m){
+	           global_p.val.value = '[protected]';
+	           global_p.val._value = m[1];
+	      }
+              , "dec_done": function(m){
+	           global_p.val.value = m[1];
+	      }
 	};
 	
 	
@@ -1530,7 +1591,7 @@ function btnBack() {
 			return false;
 		}
 
-		_log( cmd + ': ' + args );
+		//_log( cmd + ': ' + args );
 	};
 	
 	function auth( o ) {
