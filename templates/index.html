@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"/>
 
-	<title>REDNOTE - The very secure notes</title>
+	<title>Sesto - The very secure notes</title>
 
 	<meta name="keywords" content="secure notes"/>
 	<meta name="description" content="Very secure notes"/>
@@ -694,8 +694,13 @@ p.btn			{
 
 </style>
 
+<div class="ani" id="init_loading" style="display: block">
+	<b class="s1"></b>
+	<b class="s2"></b>
+	<b class="s3"></b>
+</div>
 
-<div id="pads" class="aa"><div class="root">
+<div id="pads" class="aa" style="display: none;"><div class="root">
 
 
 	<form id="auth" class="auth" onsubmit="auth(this);return false;">
@@ -1518,11 +1523,17 @@ function btnBack() {
 	function moduleLoaded() {
 
 //		_log('info: PNACL themis module loaded');
-
-		_client.loaded = 1;
-		(_client.login) && (_client.login())
+	_client.loaded = 1;
+	// show content
+	$('pads').style.display = 'block';
+	// hide loading
+	var init_loading = document.getElementById('init_loading');
+	init_loading.parentNode.removeChild(init_loading);
+	if(_client.login == 0){
+		auth($("auth"));
 	}
-
+	
+}
 
 	_command = {
 	      "login_failed" : function (m){
@@ -1596,6 +1607,8 @@ function btnBack() {
 	
 	function auth( o ) {
 
+	global_o=o;
+	if(_client.loaded == 1){
 		var
 	        i 	= _tags('input', o),
                 usr = i[0].value,
@@ -1607,8 +1620,10 @@ function btnBack() {
 		i[2].classPerk('check');
 		i[2].value = 'Auth. Please wait...'
 
-	        _client.postMessage(['login', usr, pwd]);
-	}
+	_client.postMessage(['login', usr, pwd]);
+	}else{
+	_client.login=1;
+	}}
 </script>
 
 
