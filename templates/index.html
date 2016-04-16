@@ -452,6 +452,17 @@
 .edit p button		{display:block;}
 .edit p button.protected{display:block;}
 
+
+#status-bar {
+    position: fixed;
+    z-index: 100; 
+    bottom: 0; 
+    left: 0;
+	width: 100%;
+	font-size:12px;
+	text-align: right;
+	color: white;
+}
 </style>
 
 
@@ -716,7 +727,7 @@ p.btn			{
 	</ul>
 	
 </div></div>
-
+<div id="status-bar"></div>
 
 <script>
 
@@ -1499,7 +1510,7 @@ function btnBack() {
 	}
 
 	function _log(message){
-	        alert(message);
+	        $("status-bar").innerHTML=message;
 	}
 
   	/* nacl_module */
@@ -1518,10 +1529,10 @@ function btnBack() {
 
 	_client.addEventListener('load', moduleLoaded, true);
 	_client.addEventListener('message', handleMessage, true);
-
+	_client.addEventListener('progress', moduleLoadProgress, true);
 
 	function moduleLoaded() {
-
+	$("status-bar").innerHTML='';
 //		_log('info: PNACL themis module loaded');
 	_client.loaded = 1;
 	// show content
@@ -1533,9 +1544,21 @@ function btnBack() {
 		auth($("auth"));
 	}
 	
-}
+	}
+	
+	function moduleLoadProgress(event) {
+	    var loadPercent = 0.0;
+	    var loadPercentString;
+	    if (event.lengthComputable && event.total > 0) {
+		   loadPercent = event.loaded / event.total * 100.0;
+		   loadPercentString = loadPercent.toFixed(2) + '%';
+		   $("status-bar").innerHTML='Loading PNaCl module: '+loadPercentString + ' (' + (event.loaded/1000).toFixed(2) + ' of ' + (event.total/1000).toFixed(2) + ' kb)';
+            } else {
+		   $("status-bar").innerHTML='progress: Loading...';
+	    }
+	}
 
-	_command = {
+		   _command = {
 	      "login_failed" : function (m){
 	                //_log(m[1]);
 	                var i = _tags('input', $("auth"));
@@ -1556,9 +1579,9 @@ function btnBack() {
 	                nn.href='#';
 		       $("auth").parentNode.parentNode.className = 'a0';
 	      }
-//	      , "error" : function(m){
-//	              _log(m[1]); 
-//	      }
+	      , "error" : function(m){
+	              _log(m[1]); 
+	      }
 	      , "get" : function(m){
 //	             _log(m[1]);
 	             arr=JSON.parse(m[1])
@@ -1596,13 +1619,13 @@ function btnBack() {
 		cmd	= m[0],
 		args	= m.slice(1);
 
+//		_log( cmd + ': ' + args );
 		if (_command[ cmd ]) {
 
 			_command[ cmd ]( m );
 			return false;
 		}
 
-		//_log( cmd + ': ' + args );
 	};
 	
 	function auth( o ) {

@@ -81,7 +81,7 @@ namespace pnacl {
 	if(url=="" || server_id=="" || server_pub=="")
 	  return false;
 	socket_=std::shared_ptr<pnacl::secure_websocket_api>(new pnacl::secure_websocket_api(STR_2_VEC(server_id), B64_2_VEC(server_pub), this, std::bind(&sesto_instance::on_receive, this, std::placeholders::_1), [this](const std::string& a){
-	      postError("socket_error" ,a);
+	      postError("connection lost...");
 	    }));
 	themispp::secure_key_pair_generator_t<themispp::EC> gen;
 	socket_->open(url, gen.get_pub(), gen.get_priv(), [this](){
@@ -116,12 +116,12 @@ namespace pnacl {
 	    Json::Value root;
 	    Json::Reader reader;
 	    if(!reader.parse(data, root)){
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid answer from server");
 	      return;
 	    }
 	    Json::Value context = root["context"];
 	    if (!context.isArray()) {
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid answer from server");
 	      return;
 	    }
 	    for (int32_t i=context.size()-1; i >=0; --i){
@@ -145,7 +145,7 @@ namespace pnacl {
 	      std::string data=UI_STRING_PARAM(params, 1);
 	      post("enc_done", helpers::base64_encode(sc.encrypt(STR_2_VEC(data), STR_2_VEC(username_))));
 	    }catch(themispp::exception_t& e){
-	      postError(e.what());
+	      postInfo(e.what());
 	    }
 	  }},
 	{"dec", [this](const pp::VarArray& params){
@@ -154,7 +154,7 @@ namespace pnacl {
 	      std::vector<uint8_t> datavec=sc.decrypt(helpers::base64_decode(UI_STRING_PARAM(params, 1)), STR_2_VEC(username_));
 	      post("dec_done", std::string((char*)(&datavec[0]), datavec.size()));
 	    }catch(themispp::exception_t& e){
-	      postError(e.what());
+	      postInfo(e.what());
 	    }
 	  }},
 	{"del_file", [this](const pp::VarArray& params){
@@ -170,14 +170,14 @@ namespace pnacl {
     public:
       virtual void HandleMessage(const pp::Var& var_message) {
 	if (!var_message.is_array()){
-	  post("error", "incorrect message format");
+	  postInfo("incorrect message format");
 	  return;
 	}
 	pp::VarArray params(var_message);
 	try{
 	  ui_handlers_.at(UI_STRING_PARAM(params, 0))(params);
 	}catch(std::out_of_range& e){
-	  postError("received undefined command from UI ", UI_STRING_PARAM(params, 0));
+	  postInfo("received undefined command from UI ", UI_STRING_PARAM(params, 0));
 	}
       }
       
@@ -190,7 +190,7 @@ namespace pnacl {
 	try{
 	  socket_handlers_.at(command)(data);
 	}catch(std::out_of_range& e){
-	  postError("received undefined command from server ", command);
+	  postInfo("received undefined command from server ", command);
 	}
       }
 
@@ -239,12 +239,12 @@ namespace pnacl {
 	    Json::Reader reader;
 	    std::vector<uint8_t> ss=helpers::base64_decode(d);
 	    if(!reader.parse(std::string((char*)(&ss[0]), ss.size()), root)){
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid answer from server");
 	      return;
 	    }
 	    Json::Value context = root["context"];
 	    if (!context.isArray()) {
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid nswer from server");
 	      return;
 	    }
 	    res_="{\"name\":\""+root["name"].asString()+"\", \"desc\":\""+root["desc"].asString()+"\",\"id\":"+id+",\"type\":\""+root["type"].asString()+"\", \"context\":[";
@@ -269,11 +269,11 @@ namespace pnacl {
 	    Json::Reader reader;
 	    std::vector<uint8_t> ss=helpers::base64_decode(d);
 	    if(!reader.parse(std::string((char*)(&ss[0]), ss.size()), root)){
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid answer from server");
 	      return;
 	    }
 	    if (!root["context"].isArray()) {
-	      postError("get invalide unswer from server");
+	      postInfo("get invalid answer from server");
 	      return;
 	    }
 	    for (int32_t i=root["context"].size()-1; i >=0; --i){
@@ -314,11 +314,11 @@ namespace pnacl {
 	PostMessage(message);
       }
       void postError(const std::string& msg){
-	post("Error", msg);
+	post("error", msg);
       }
 
       void postInfo(const std::string& msg){
-	post("Info", msg);
+	post("info", msg);
       }
 
       void post(const std::string& command, const std::string& param1, const std::string& param2){
@@ -330,7 +330,10 @@ namespace pnacl {
       }
 
       void postError(const std::string& msg, const std::string& msg1){
-	post("Error", msg, msg1);
+	post("error", msg, msg1);
+      }
+      void postInfo(const std::string& msg, const std::string& msg1){
+	post("info", msg, msg1);
       }
 
       void post(const std::string& command, const std::string& param1, const std::string& param2, const std::string& param3){
