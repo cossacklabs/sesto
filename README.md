@@ -2,6 +2,8 @@
 
 Sesto (abbreviation for Secret Store) is open source passwords (and general secrets) manager for web. 
 
+Sesto works on a Python server, when first accessed, serves users Google PNaCl module, which performs cryptographic protection and data management in user browser. This way, it enables strong cryptographic protection of secrets and passwords in your web browser (Google Chrome), so you can gain access to your passwords anywhere, safely.
+
 Read [blog post](https://www.cossacklabs.com/presenting-sesto.html) for description of Sesto, it's security model, architecture and some background experience. 
 
 Sesto is a proof-of-concept tool developed during Themis/WebThemis development to see how easy would it be to build sophisticated security schemes. 
