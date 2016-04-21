@@ -346,13 +346,6 @@ if __name__ == '__main__':
     key_pair=skeygen.themis_gen_key_pair('EC')
     server_private_key=key_pair.export_private_key()
     server_public_key=key_pair.export_public_key()
-    
-    rooms = {}
-    pub_keys = {}
-    online = {}
-    history = {}
-    rooms_history = {}
-
     loop = asyncio.get_event_loop()
     handler, app, srv = loop.run_until_complete(init(port, loop))
     try:
